@@ -1,0 +1,148 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocabmastery/topic
+
+    Topic screen: mastery summary, set picker, training modes, mastery check and word list.
+
+    Example context (json):
+    {
+        "cmid": 1, "topicid": 2, "backurl": "#", "activityname": "German Vocabulary", "level": "A1",
+        "name": "Lektion 4 – Lecker!", "mastery": 71, "corecount": 35, "mastered": 25, "learning": 6, "difficult": 4,
+        "newcount": 0, "threshold": 90, "scheme": "light", "hassets": true, "testenabled": true, "testquestions": 35,
+        "sets": [{"id": 3, "name": "Nomen + Artikel", "itemcount": 40, "corecount": 35, "mastery": 71, "selected": true,
+            "words": [{"prompt": "Vater", "correct": "der", "translation": "father", "state": "mastered",
+            "statelabel": "Mastered", "answerfirst": true}]}],
+        "modes": [{"mode": "practice", "title": "Practice", "desc": "Work through the set", "setscoped": true}]
+    }
+}}
+<div class="vm-app vm-scheme-{{scheme}}" data-region="vm-app" data-cmid="{{cmid}}" data-topicid="{{topicid}}">
+    <div class="vm-stage" data-region="vm-stage">
+        <a class="vm-back" href="{{backurl}}">{{#icons.left}}{{> mod_vocabmastery/icon}}{{/icons.left}}<span>{{activityname}}</span></a>
+
+        {{#preview}}<div class="vm-note">{{#icons.lock}}{{> mod_vocabmastery/icon}}{{/icons.lock}}<span>{{#str}}teacherpreview, mod_vocabmastery{{/str}}</span></div>{{/preview}}
+
+        <header class="vm-hero vm-topic-hero">
+            <div class="vm-hero-main">
+                <span class="vm-level-pill">{{level}}</span>
+                <h2 class="vm-hero-title">{{name}}</h2>
+                {{#hasdescription}}<div class="vm-hero-sub">{{{description}}}</div>{{/hasdescription}}
+                {{#passed}}<span class="vm-passed-badge">{{#icons.award}}{{> mod_vocabmastery/icon}}{{/icons.award}}<span>{{#str}}topicmastered, mod_vocabmastery{{/str}}</span></span>{{/passed}}
+            </div>
+            <div class="vm-ring {{#passed}}vm-ring-done{{/passed}}" role="img" aria-label="{{#str}}mastery, mod_vocabmastery{{/str}}: {{mastery}}%">
+                <svg viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+                    <circle class="vm-ring-track" cx="18" cy="18" r="15.9155"/>
+                    <circle class="vm-ring-value" cx="18" cy="18" r="15.9155" stroke-dasharray="{{ringdash}} 100"/>
+                </svg>
+                <div class="vm-ring-label"><span class="vm-ring-num">{{mastery}}%</span><span class="vm-ring-cap">{{#str}}mastery, mod_vocabmastery{{/str}}</span></div>
+            </div>
+        </header>
+
+        <div class="vm-kpis">
+            <div class="vm-kpi vm-kpi-good"><span class="vm-kpi-num">{{mastered}}</span><span class="vm-kpi-lbl">{{#str}}state_mastered, mod_vocabmastery{{/str}}</span></div>
+            <div class="vm-kpi vm-kpi-info"><span class="vm-kpi-num">{{learning}}</span><span class="vm-kpi-lbl">{{#str}}state_learning, mod_vocabmastery{{/str}}</span></div>
+            <div class="vm-kpi vm-kpi-warn"><span class="vm-kpi-num">{{difficult}}</span><span class="vm-kpi-lbl">{{#str}}state_difficult, mod_vocabmastery{{/str}}</span></div>
+            <div class="vm-kpi"><span class="vm-kpi-num">{{newcount}}</span><span class="vm-kpi-lbl">{{#str}}state_new, mod_vocabmastery{{/str}}</span></div>
+        </div>
+        <div class="vm-threshold">
+            <div class="vm-bar vm-bar-threshold" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{mastery}}"
+                 aria-label="{{#str}}mastery, mod_vocabmastery{{/str}}">
+                <div class="vm-bar-fill" style="width: {{mastery}}%"></div>
+                <div class="vm-bar-mark" style="left: {{threshold}}%" aria-hidden="true"><span>{{threshold}}%</span></div>
+            </div>
+            <div class="vm-muted vm-small">{{unlockhelp}}{{#hasbesttest}} · {{#str}}besttest, mod_vocabmastery, {{besttest}}{{/str}}{{/hasbesttest}}</div>
+        </div>
+
+        {{#hasroutes}}
+        <div class="vm-card vm-routes">
+            <div class="vm-card-title">{{#str}}wherenext, mod_vocabmastery{{/str}}</div>
+            <div class="vm-route-list">
+            {{#routes}}
+            <a class="vm-route vm-route-{{type}}" href="{{url}}">
+                <span class="vm-route-icon">{{#icon}}{{> mod_vocabmastery/icon}}{{/icon}}</span>
+                <span class="vm-route-body"><span class="vm-route-lbl">{{label}}</span><span class="vm-route-name">{{level}} · {{name}}</span></span>
+            </a>
+            {{/routes}}
+            </div>
+        </div>
+        {{/hasroutes}}
+
+        {{^hassets}}<div class="vm-card vm-empty">{{#str}}noitems, mod_vocabmastery{{/str}}</div>{{/hassets}}
+
+        {{#hassets}}
+        {{#multisets}}
+        <div class="vm-section-label">{{#str}}chooseset, mod_vocabmastery{{/str}}</div>
+        <div class="vm-setpicker" role="radiogroup" aria-label="{{#str}}chooseset, mod_vocabmastery{{/str}}">
+            {{#sets}}
+            <button type="button" class="vm-setchip {{#selected}}vm-selected{{/selected}}" role="radio"
+                    aria-checked="{{#selected}}true{{/selected}}{{^selected}}false{{/selected}}"
+                    data-action="vm-selectset" data-setid="{{id}}">
+                <span class="vm-setchip-name">{{name}}</span>
+                <span class="vm-setchip-meta">{{mastery}}% · {{itemcount}}{{#gated}} · {{#str}}gatedshort, mod_vocabmastery{{/str}}{{/gated}}</span>
+            </button>
+            {{/sets}}
+        </div>
+        {{/multisets}}
+
+        {{#learnfirst}}<div class="vm-note">{{#icons.lock}}{{> mod_vocabmastery/icon}}{{/icons.lock}}<span>{{#str}}learnfirst, mod_vocabmastery{{/str}}</span></div>{{/learnfirst}}
+
+        <div class="vm-modes">
+            {{#modes}}
+            <button type="button" class="vm-mode vm-mode-{{mode}}" data-action="vm-start" data-mode="{{mode}}"
+                    data-setscoped="{{#setscoped}}1{{/setscoped}}{{^setscoped}}0{{/setscoped}}" {{#locked}}disabled{{/locked}}>
+                <span class="vm-mode-icon">{{#icon}}{{> mod_vocabmastery/icon}}{{/icon}}</span>
+                <span class="vm-mode-text">
+                    <span class="vm-mode-title">{{title}}</span>
+                    <span class="vm-mode-desc">{{desc}}</span>
+                </span>
+            </button>
+            {{/modes}}
+        </div>
+
+        {{#testenabled}}
+        <div class="vm-card vm-testcard">
+            <span class="vm-testcard-icon">{{#icons.test}}{{> mod_vocabmastery/icon}}{{/icons.test}}</span>
+            <div class="vm-testcard-body">
+                <div class="vm-card-title">{{#str}}masterycheck, mod_vocabmastery{{/str}}</div>
+                <div class="vm-muted vm-small">{{#str}}masterycheck_desc, mod_vocabmastery, {"n": {{testquestions}}, "threshold": {{threshold}} }{{/str}}</div>
+            </div>
+            <button type="button" class="vm-btn vm-btn-primary" data-action="vm-start" data-mode="test" data-setscoped="0" {{#testlocked}}disabled{{/testlocked}}>
+                {{#str}}startcheck, mod_vocabmastery{{/str}}
+            </button>
+        </div>
+        {{/testenabled}}
+
+        <details class="vm-card vm-words">
+            <summary><span class="vm-badge-icon">{{#icons.list}}{{> mod_vocabmastery/icon}}{{/icons.list}}</span><span class="vm-card-title">{{#str}}wordlist, mod_vocabmastery{{/str}}</span></summary>
+            {{#sets}}
+            <h3 class="vm-words-set">{{name}}</h3>
+            <ul class="vm-wordlist">
+                {{#words}}
+                <li class="vm-w-{{state}}">
+                    <span class="vm-pill vm-pill-{{state}}">{{statelabel}}</span>
+                    <span class="vm-word">{{#answerfirst}}<b>{{correct}}</b> {{prompt}}{{/answerfirst}}{{^answerfirst}}{{prompt}} → <b>{{correct}}</b>{{/answerfirst}}{{#plural}} <span class="vm-muted">({{plural}})</span>{{/plural}}</span>
+                    <span class="vm-muted vm-w-trans">{{translation}}{{#optional}} · {{#str}}optional, mod_vocabmastery{{/str}}{{/optional}}</span>
+                    {{#attempts}}<span class="vm-acc">{{accuracy}}%</span>{{/attempts}}
+                </li>
+                {{/words}}
+            </ul>
+            {{/sets}}
+        </details>
+        {{/hassets}}
+    </div>
+    <div class="sr-only visually-hidden" aria-live="polite" data-region="vm-live"></div>
+</div>

@@ -1,0 +1,177 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocabmastery/dashboard
+
+    Student home screen: overall progress, continue, difficult words, pathway and topics.
+
+    Example context (json):
+    {
+        "cmid": 1, "name": "German Vocabulary", "targetlanguage": "German", "overall": 42, "topicspassed": 3,
+        "topicstotal": 10, "hascontent": true, "scheme": "light", "threshold": 90,
+        "continue": {"url": "#", "level": "A1", "name": "Lektion 5", "remaining": 12, "started": true},
+        "levels": [{"id": 1, "name": "A1", "percent": 60, "passedcount": 1, "topiccount": 2, "hastopics": true,
+            "topics": [{"name": "Lektion 1", "url": "#", "status": "passed", "statuslabel": "Mastered", "passed": true,
+            "mastery": 100, "corecount": 18, "mastered": 18}]}]
+    }
+}}
+<div class="vm-app vm-scheme-{{scheme}}" data-region="vm-app" data-cmid="{{cmid}}">
+    <div class="vm-stage" data-region="vm-stage">
+
+        <header class="vm-hero">
+            <div class="vm-hero-main">
+                <div class="vm-brand">
+                    <span class="vm-brand-mark">{{#icons.layers}}{{> mod_vocabmastery/icon}}{{/icons.layers}}</span>
+                    {{#targetlanguage}}<span class="vm-eyebrow">{{targetlanguage}}</span>{{/targetlanguage}}
+                </div>
+                <h2 class="vm-hero-title">{{name}}</h2>
+                {{#hascontent}}
+                <p class="vm-hero-sub">{{#str}}topicspassedof, mod_vocabmastery, {"passed": {{topicspassed}}, "total": {{topicstotal}} }{{/str}} · {{#str}}nwords, mod_vocabmastery, {{itemcount}}{{/str}}</p>
+                {{/hascontent}}
+                {{#canmanage}}
+                <nav class="vm-toolbar" aria-label="{{#str}}managecontent, mod_vocabmastery{{/str}}">
+                    <a class="vm-chip-link" href="{{manageurl}}">{{#icons.settings}}{{> mod_vocabmastery/icon}}{{/icons.settings}}<span>{{#str}}managecontent, mod_vocabmastery{{/str}}</span></a>
+                    <a class="vm-chip-link" href="{{importurl}}">{{#icons.upload}}{{> mod_vocabmastery/icon}}{{/icons.upload}}<span>{{#str}}importvocab, mod_vocabmastery{{/str}}</span></a>
+                    {{#canreport}}<a class="vm-chip-link" href="{{reporturl}}">{{#icons.chart}}{{> mod_vocabmastery/icon}}{{/icons.chart}}<span>{{#str}}reports, mod_vocabmastery{{/str}}</span></a>{{/canreport}}
+                </nav>
+                {{/canmanage}}
+                {{^canmanage}}{{#canreport}}
+                <nav class="vm-toolbar"><a class="vm-chip-link" href="{{reporturl}}">{{#icons.chart}}{{> mod_vocabmastery/icon}}{{/icons.chart}}<span>{{#str}}reports, mod_vocabmastery{{/str}}</span></a></nav>
+                {{/canreport}}{{/canmanage}}
+            </div>
+            {{#hascontent}}
+            <div class="vm-ring" role="img" aria-label="{{#str}}yourprogress, mod_vocabmastery{{/str}}: {{overall}}%">
+                <svg viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+                    <circle class="vm-ring-track" cx="18" cy="18" r="15.9155"/>
+                    <circle class="vm-ring-value" cx="18" cy="18" r="15.9155" stroke-dasharray="{{overall}} 100"/>
+                </svg>
+                <div class="vm-ring-label"><span class="vm-ring-num">{{overall}}%</span><span class="vm-ring-cap">{{#str}}yourprogress, mod_vocabmastery{{/str}}</span></div>
+            </div>
+            {{/hascontent}}
+        </header>
+
+        {{^hascontent}}
+        <div class="vm-card vm-empty">
+            <p>{{#str}}nocontentstudent, mod_vocabmastery{{/str}}</p>
+            {{#canmanage}}<a class="vm-btn vm-btn-primary" href="{{importurl}}">{{#str}}importvocab, mod_vocabmastery{{/str}}</a>{{/canmanage}}
+        </div>
+        {{/hascontent}}
+
+        {{#hascontent}}
+        <div class="vm-grid-2">
+            {{#continue}}
+            <a class="vm-card vm-continue" href="{{url}}">
+                <span class="vm-continue-icon">{{#icons.play}}{{> mod_vocabmastery/icon}}{{/icons.play}}</span>
+                <span class="vm-continue-body">
+                    <span class="vm-eyebrow vm-eyebrow-accent">{{#started}}{{#str}}continuelearning, mod_vocabmastery{{/str}}{{/started}}{{^started}}{{#str}}startlearning, mod_vocabmastery{{/str}}{{/started}}</span>
+                    <span class="vm-continue-topic">{{name}}</span>
+                    <span class="vm-muted vm-small">{{level}} · {{#str}}wordsremaining, mod_vocabmastery, {{remaining}}{{/str}}</span>
+                </span>
+                <span class="vm-continue-go">{{#icons.right}}{{> mod_vocabmastery/icon}}{{/icons.right}}</span>
+            </a>
+            {{/continue}}
+            {{#allpassed}}
+            <div class="vm-card vm-celebrate"><span class="vm-celebrate-icon">{{#icons.trophy}}{{> mod_vocabmastery/icon}}{{/icons.trophy}}</span><span>{{#str}}allmastered, mod_vocabmastery{{/str}}</span></div>
+            {{/allpassed}}
+
+            {{#hasdifficult}}
+            <div class="vm-card vm-difficult">
+                <div class="vm-card-head">
+                    <span class="vm-badge-icon vm-tone-warn">{{#icons.alert}}{{> mod_vocabmastery/icon}}{{/icons.alert}}</span>
+                    <div>
+                        <div class="vm-card-title">{{#str}}yourdifficultwords, mod_vocabmastery{{/str}}</div>
+                        <div class="vm-muted vm-small">{{#str}}ndifficult, mod_vocabmastery, {{difficultcount}}{{/str}}</div>
+                    </div>
+                </div>
+                <ul class="vm-wordlist vm-wordlist-compact">
+                    {{#difficulttop}}
+                    <li><span class="vm-word">{{prompt}}</span><span class="vm-muted">{{correct}}</span><span class="vm-pill vm-pill-warn">{{accuracy}}%</span></li>
+                    {{/difficulttop}}
+                </ul>
+                <button type="button" class="vm-btn vm-btn-secondary vm-btn-block" data-action="vm-start" data-mode="difficult" data-topicid="0">
+                    {{#str}}traindifficult, mod_vocabmastery{{/str}}
+                </button>
+            </div>
+            {{/hasdifficult}}
+        </div>
+
+        {{#matrix}}
+        <section class="vm-card vm-matrix-card" aria-labelledby="vm-pathway-title">
+            <div class="vm-card-head">
+                <span class="vm-badge-icon">{{#icons.map}}{{> mod_vocabmastery/icon}}{{/icons.map}}</span>
+                <div>
+                    <div class="vm-card-title" id="vm-pathway-title">{{#str}}pathwaymap, mod_vocabmastery{{/str}}</div>
+                    <div class="vm-muted vm-small">{{progressionhelp}}</div>
+                </div>
+            </div>
+            <div class="vm-matrix-scroll">
+                <table class="vm-matrix">
+                    <thead><tr><th scope="col"><span class="sr-only visually-hidden">{{#str}}level, mod_vocabmastery{{/str}}</span></th>{{#cols}}<th scope="col">{{key}}</th>{{/cols}}</tr></thead>
+                    <tbody>
+                    {{#rows}}
+                    <tr>
+                        <th scope="row">{{name}}</th>
+                        {{#cells}}
+                        <td>
+                            {{#has}}
+                            {{#url}}<a class="vm-cell vm-cell-{{status}}" href="{{url}}" title="{{name}} – {{statuslabel}}"><span class="sr-only visually-hidden">{{name}} – {{statuslabel}}</span>{{#passed}}{{#icon}}{{> mod_vocabmastery/icon}}{{/icon}}{{/passed}}{{#active}}{{realmastery}}{{/active}}{{#available}}{{#icon}}{{> mod_vocabmastery/icon}}{{/icon}}{{/available}}</a>{{/url}}
+                            {{^url}}<span class="vm-cell vm-cell-locked" title="{{name}} – {{statuslabel}}"><span class="sr-only visually-hidden">{{name}} – {{statuslabel}}</span></span>{{/url}}
+                            {{/has}}
+                        </td>
+                        {{/cells}}
+                    </tr>
+                    {{/rows}}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {{/matrix}}
+
+        {{#levels}}
+        <section class="vm-level {{#complete}}vm-level-complete{{/complete}}" aria-labelledby="vm-level-{{id}}">
+            <div class="vm-level-hdr">
+                <span class="vm-level-badge" aria-hidden="true">{{name}}</span>
+                <div class="vm-level-info">
+                    <h3 class="vm-level-title" id="vm-level-{{id}}">{{name}}</h3>
+                    <div class="vm-muted vm-small">{{#str}}topicspassedof, mod_vocabmastery, {"passed": {{passedcount}}, "total": {{topiccount}} }{{/str}}</div>
+                </div>
+                <div class="vm-level-progress">
+                    <span class="vm-level-pct">{{percent}}%</span>
+                    <span class="vm-bar vm-bar-thin" aria-hidden="true"><span class="vm-bar-fill" style="width: {{percent}}%"></span></span>
+                </div>
+            </div>
+            <div class="vm-topic-grid">
+                {{#topics}}
+                {{#url}}<a class="vm-topic vm-topic-{{status}}" href="{{url}}">{{/url}}
+                {{^url}}<div class="vm-topic vm-topic-{{status}}" aria-disabled="true">{{/url}}
+                    <span class="vm-topic-top">
+                        <span class="vm-status vm-status-{{status}}"><span class="vm-status-icon">{{#icon}}{{> mod_vocabmastery/icon}}{{/icon}}</span>{{statuslabel}}</span>
+                        <span class="vm-topic-count">{{#str}}nwords, mod_vocabmastery, {{corecount}}{{/str}}</span>
+                    </span>
+                    <span class="vm-topic-name">{{name}}</span>
+                    <span class="vm-bar vm-bar-thin" aria-hidden="true"><span class="vm-bar-fill" style="width: {{mastery}}%"></span></span>
+                {{#url}}</a>{{/url}}
+                {{^url}}</div>{{/url}}
+                {{/topics}}
+                {{^hastopics}}<div class="vm-muted">{{#str}}notopics, mod_vocabmastery{{/str}}</div>{{/hastopics}}
+            </div>
+        </section>
+        {{/levels}}
+        {{/hascontent}}
+    </div>
+    <div class="sr-only visually-hidden" aria-live="polite" data-region="vm-live"></div>
+</div>

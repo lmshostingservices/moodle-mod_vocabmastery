@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<libraries>
+  <library>
+    <location>templates/icon.mustache</location>
+    <name>Lucide icons (SVG path data for 23 icons)</name>
+    <description>Line icon outlines used in the student interface. Full licence and copyright notice: LICENSE-LUCIDE.txt (ISC; icons derived from Feather are also under MIT).</description>
+    <version>Unversioned subset</version>
+    <license>ISC</license>
+    <licenseversion></licenseversion>
+    <repository>https://github.com/lucide-icons/lucide</repository>
+    <copyrights>
+      <copyright>2026 Lucide Icons and Contributors</copyright>
+      <copyright>2013-present Cole Bemis (Feather-derived icons, MIT)</copyright>
+    </copyrights>
+  </library>
+</libraries>

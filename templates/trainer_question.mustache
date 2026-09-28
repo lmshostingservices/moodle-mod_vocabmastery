@@ -1,0 +1,52 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocabmastery/trainer_question
+
+    One question card (choice buttons or typed answer).
+
+    Example context (json):
+    {
+        "instruction": "Which article?", "prompt": "Vater", "translation": "father", "optioncount": 3,
+        "choice": true, "options": [{"value": "der", "key": 1}, {"value": "die", "key": 2}, {"value": "das", "key": 3}],
+        "hashint": true, "hintlabel": "Hint", "icons": {"hint": {"ic_hint": true} }
+    }
+}}
+{{#instruction}}<div class="vm-tr-instruction">{{instruction}}</div>{{/instruction}}
+{{#hastags}}<div class="vm-tr-tags">{{#injected}}<span class="vm-tag vm-tag-warn">{{difficulttag}}</span>{{/injected}}{{#optional}}<span class="vm-tag">{{optionaltag}}</span>{{/optional}}</div>{{/hastags}}
+<div class="vm-tr-prompt">{{prompt}}</div>
+{{#translation}}<div class="vm-tr-translation">{{translation}}</div>{{/translation}}
+{{#choice}}
+<div class="vm-tr-answers vm-n{{optioncount}}">
+    {{#options}}
+    <button type="button" class="vm-answer" data-action="answer" data-value="{{value}}" {{#key}}aria-keyshortcuts="{{key}}"{{/key}}>
+        {{#key}}<span class="vm-key" aria-hidden="true">{{key}}</span>{{/key}}<span class="vm-answer-text">{{value}}</span>
+    </button>
+    {{/options}}
+</div>
+{{/choice}}
+{{^choice}}
+<div class="vm-tr-answers vm-tr-typed">
+    <input type="text" class="vm-tr-input" data-region="input" autocomplete="off" autocapitalize="off" spellcheck="false"
+           aria-label="{{typeanswerlabel}}" placeholder="{{typeanswerlabel}}">
+    <button type="button" class="vm-btn vm-btn-primary" data-action="check">{{checklabel}}</button>
+</div>
+{{/choice}}
+<div class="vm-tr-feedback" role="status" data-region="feedback"></div>
+<div class="vm-tr-actions" data-region="actions">
+    {{#hashint}}<button type="button" class="vm-btn vm-btn-ghost vm-btn-sm" data-action="hint">{{#icons.hint}}{{> mod_vocabmastery/icon}}{{/icons.hint}}<span>{{hintlabel}}</span></button>{{/hashint}}
+</div>

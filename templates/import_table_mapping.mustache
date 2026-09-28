@@ -1,0 +1,98 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocabmastery/import_table_mapping
+
+    Column mapping, validation and preview for pasted / uploaded tables.
+
+    Example context (json):
+    {
+        "actionurl": "#", "sesskey": "abc", "token": "t1", "detected": "Column 1 → Answer",
+        "columns": [{"name": "col0", "label": "Column 1", "options": [{"value": "prompt", "label": "Prompt", "selected": true}]}],
+        "samplerows": [{"header": false, "cells": [{"value": "der"}]}], "rowcount": "4 rows", "hasheader": false,
+        "targets": [{"name": "targetlevel", "label": "Level", "value": "A1", "list": [{"value": "A1"}]}],
+        "duplicates": [{"value": "skip", "label": "Skip", "selected": true}],
+        "ready": true, "haswarnings": false, "warningtitle": "", "warnings": [],
+        "haspreview": true, "previewtitle": "Preview (4 rows)", "previewhead": [{"label": "Prompt"}],
+        "previewrows": [{"cells": [{"value": "Vater"}]}], "importlabel": "Import 4 rows", "cancelurl": "#"
+    }
+}}
+<form method="post" action="{{actionurl}}">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+    <input type="hidden" name="step" value="maptable">
+    <input type="hidden" name="token" value="{{token}}">
+    <input type="hidden" name="source" value="table">
+    <input type="hidden" name="mapped" value="1">
+    <div class="alert alert-info">{{#str}}wedetected, mod_vocabmastery{{/str}} {{detected}}</div>
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+            <thead><tr>
+                {{#columns}}
+                <th scope="col">
+                    <select name="{{name}}" class="form-select form-select-sm" aria-label="{{label}}">
+                        {{#options}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/options}}
+                    </select>
+                </th>
+                {{/columns}}
+            </tr></thead>
+            <tbody>
+                {{#samplerows}}
+                <tr class="{{#header}}table-secondary fst-italic{{/header}}">{{#cells}}<td>{{value}}</td>{{/cells}}</tr>
+                {{/samplerows}}
+            </tbody>
+        </table>
+    </div>
+    <div class="small text-muted mb-2">{{rowcount}}</div>
+    <div class="row g-3 mb-3">
+        <div class="col-12 form-check ms-2">
+            <input type="checkbox" class="form-check-input" name="hasheader" value="1" id="vm-hasheader" {{#hasheader}}checked{{/hasheader}}>
+            <label for="vm-hasheader" class="form-check-label">{{#str}}firstrowheader, mod_vocabmastery{{/str}}</label>
+        </div>
+        {{#targets}}
+        <div class="col-md-4">
+            <label for="vm-{{name}}">{{label}}</label>
+            <input type="text" name="{{name}}" id="vm-{{name}}" value="{{value}}" list="dl-{{name}}" class="form-control">
+            <datalist id="dl-{{name}}">{{#list}}<option value="{{value}}">{{/list}}</datalist>
+        </div>
+        {{/targets}}
+        <div class="col-12 small text-muted">{{#str}}targethelp, mod_vocabmastery{{/str}}</div>
+        <div class="col-12">
+            <label for="vm-dups" class="me-2">{{#str}}duplicates, mod_vocabmastery{{/str}}</label>
+            <select name="duplicates" id="vm-dups" class="form-select d-inline w-auto">
+                {{#duplicates}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/duplicates}}
+            </select>
+        </div>
+    </div>
+    {{^ready}}<div class="alert alert-warning">{{#str}}mappingincomplete, mod_vocabmastery{{/str}}</div>{{/ready}}
+    {{#haswarnings}}
+    <div class="alert alert-warning">{{warningtitle}}<ul class="mb-0">{{#warnings}}<li>{{text}}</li>{{/warnings}}</ul></div>
+    {{/haswarnings}}
+    {{#haspreview}}
+    <h4>{{previewtitle}}</h4>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped">
+            <thead><tr>{{#previewhead}}<th scope="col">{{label}}</th>{{/previewhead}}</tr></thead>
+            <tbody>{{#previewrows}}<tr>{{#cells}}<td>{{value}}</td>{{/cells}}</tr>{{/previewrows}}</tbody>
+        </table>
+    </div>
+    {{/haspreview}}
+    <div class="vm-stickybar">
+        <button type="submit" class="btn btn-secondary">{{#str}}updatepreview, mod_vocabmastery{{/str}}</button>
+        {{#ready}}<button type="submit" name="doimport" value="1" class="btn btn-primary">{{importlabel}}</button>{{/ready}}
+        <a class="btn btn-link" href="{{cancelurl}}">{{#str}}cancel{{/str}}</a>
+    </div>
+</form>

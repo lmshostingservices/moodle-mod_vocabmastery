@@ -1,0 +1,81 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocabmastery/manage
+
+    Content tree for teachers: levels, topics and sets with actions.
+
+    Example context (json):
+    {
+        "addlevelurl": "#", "addtopicurl": "#", "addseturl": "#", "importurl": "#", "exporturl": "#",
+        "counts": "3 levels · 34 topics · 125 sets · 1539 items", "haslevels": true,
+        "levels": [{"name": "A1", "ntopics": "12 topics", "addtopicurl": "#",
+            "actions": [{"url": "#", "pix": "t/edit", "label": "Edit"}],
+            "topics": [{"name": "Lektion 1", "pathkey": "#1", "previewurl": "#", "addseturl": "#", "actions": [],
+                "sets": [{"name": "Nomen + Artikel", "url": "#", "items": "19 items (18 core)", "gated": true,
+                    "answers": "der / die / das", "actions": []}], "notes": ""}]}]
+    }
+}}
+<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+    <a class="btn btn-secondary" href="{{addlevelurl}}">{{#str}}addlevel, mod_vocabmastery{{/str}}</a>
+    <a class="btn btn-secondary" href="{{addtopicurl}}">{{#str}}addtopic, mod_vocabmastery{{/str}}</a>
+    <a class="btn btn-secondary" href="{{addseturl}}">{{#str}}addset, mod_vocabmastery{{/str}}</a>
+    <a class="btn btn-primary" href="{{importurl}}">{{#str}}importvocab, mod_vocabmastery{{/str}}</a>
+    {{#exporturl}}<a class="btn btn-outline-secondary" href="{{exporturl}}">{{#str}}exportcsv, mod_vocabmastery{{/str}}</a>{{/exporturl}}
+    <span class="text-muted ms-auto">{{counts}}</span>
+</div>
+{{^haslevels}}<div class="alert alert-info">{{#str}}nocontentyet, mod_vocabmastery{{/str}}</div>{{/haslevels}}
+{{#levels}}
+<div class="card mb-3">
+    <div class="card-header d-flex align-items-center">
+        <h3 class="h5 mb-0">{{name}}</h3>
+        <span class="badge bg-secondary ms-2">{{ntopics}}</span>
+        <span class="ms-2">{{#actions}}{{> mod_vocabmastery/manage_action}}{{/actions}}</span>
+        <a class="btn btn-sm btn-outline-primary ms-auto" href="{{addtopicurl}}">{{#str}}addtopic, mod_vocabmastery{{/str}}</a>
+    </div>
+    <ul class="list-group list-group-flush">
+        {{#topics}}
+        <li class="list-group-item">
+            <div class="d-flex align-items-center flex-wrap">
+                <strong>{{name}}</strong>
+                <span class="badge bg-light text-dark ms-2" title="{{#str}}pathkey, mod_vocabmastery{{/str}}">{{pathkey}}</span>
+                <span class="ms-2">{{#actions}}{{> mod_vocabmastery/manage_action}}{{/actions}}</span>
+                <a class="btn btn-sm btn-link" href="{{previewurl}}">{{#str}}preview{{/str}}</a>
+                <a class="btn btn-sm btn-outline-secondary ms-auto" href="{{addseturl}}">{{#str}}addset, mod_vocabmastery{{/str}}</a>
+            </div>
+            {{#hassets}}
+            <ul class="mt-2 mb-0 list-unstyled ps-3">
+                {{#sets}}
+                <li class="d-flex align-items-center flex-wrap py-1">
+                    <a href="{{url}}">{{name}}</a>
+                    <span class="badge bg-info text-dark ms-2">{{items}}</span>
+                    {{#gated}}<span class="badge bg-success ms-1" title="{{#str}}gated, mod_vocabmastery{{/str}}">{{#str}}gatedshort, mod_vocabmastery{{/str}}</span>{{/gated}}
+                    <span class="badge bg-light text-dark ms-1">{{answers}}</span>
+                    <span class="ms-2">{{#actions}}{{> mod_vocabmastery/manage_action}}{{/actions}}</span>
+                </li>
+                {{/sets}}
+            </ul>
+            {{/hassets}}
+            {{#notes}}
+            <details class="mt-1"><summary class="small text-muted">{{#str}}teachernotes, mod_vocabmastery{{/str}}</summary>
+                <div class="small text-muted ps-3 vm-prewrap">{{notes}}</div></details>
+            {{/notes}}
+        </li>
+        {{/topics}}
+    </ul>
+</div>
+{{/levels}}

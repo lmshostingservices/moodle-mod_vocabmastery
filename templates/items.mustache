@@ -1,0 +1,80 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocabmastery/items
+
+    Bulk item editor for one set.
+
+    Example context (json):
+    {
+        "manageurl": "#", "info": "Fixed list: der / die / das · Counts towards topic mastery", "seturl": "#",
+        "actionurl": "#", "sesskey": "abc", "count": "19 items (18 core)",
+        "bulk": [{"value": "", "label": "With selected..."}], "hastargets": true, "targets": [{"value": 2, "label": "A1 · L2 · Nouns"}],
+        "fields": [{"field": "prompt", "label": "Prompt (word)"}],
+        "items": [{"id": 1, "search": "vater der father", "prompt": "Vater", "iscore": true,
+            "cells": [{"name": "items[1][prompt]", "value": "Vater", "field": "prompt", "label": "Prompt (word)"}]}],
+        "newrows": [{"cells": [{"name": "new[0][prompt]", "value": "", "field": "prompt", "label": "Prompt (word)"}], "corename": "new[0][iscore]"}]
+    }
+}}
+<div class="mb-2"><a href="{{manageurl}}">← {{#str}}managecontent, mod_vocabmastery{{/str}}</a></div>
+<div class="text-muted mb-3">{{info}} <a href="{{seturl}}">{{#str}}editsetsettings, mod_vocabmastery{{/str}}</a></div>
+<form method="post" action="{{actionurl}}" id="vm-items-form">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+    <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+        <input type="search" class="form-control w-auto" id="vm-items-filter" placeholder="{{#str}}search{{/str}}" aria-label="{{#str}}search{{/str}}">
+        <select name="bulk" id="vm-bulk" class="form-select w-auto" aria-label="{{#str}}withselected, mod_vocabmastery{{/str}}">
+            {{#bulk}}<option value="{{value}}">{{label}}</option>{{/bulk}}
+        </select>
+        {{#hastargets}}
+        <select name="targetset" id="vm-targetset" class="form-select w-auto d-none" aria-label="{{#str}}moveto, mod_vocabmastery{{/str}}">
+            {{#targets}}<option value="{{value}}">{{label}}</option>{{/targets}}
+        </select>
+        {{/hastargets}}
+        <span class="text-muted ms-auto">{{count}}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover vm-items-table" id="vm-items-table">
+            <thead>
+                <tr>
+                    <th scope="col"><input type="checkbox" id="vm-selectall" aria-label="{{#str}}selectall{{/str}}"></th>
+                    {{#fields}}<th scope="col">{{label}}</th>{{/fields}}
+                    <th scope="col">{{#str}}field_iscore, mod_vocabmastery{{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#items}}
+                <tr data-search="{{search}}">
+                    <td><input type="checkbox" class="vm-sel" name="sel[{{id}}]" value="1" aria-label="{{#str}}select{{/str}} {{prompt}}"></td>
+                    {{#cells}}<td><input type="text" class="form-control form-control-sm vm-f-{{field}}" name="{{name}}" value="{{value}}" aria-label="{{label}}"></td>{{/cells}}
+                    <td><input type="checkbox" name="items[{{id}}][iscore]" value="1" {{#iscore}}checked{{/iscore}} aria-label="{{#str}}field_iscore, mod_vocabmastery{{/str}}"></td>
+                </tr>
+                {{/items}}
+                {{#newrows}}
+                <tr class="vm-newrow">
+                    <td class="text-muted">+</td>
+                    {{#cells}}<td><input type="text" class="form-control form-control-sm vm-f-{{field}}" name="{{name}}" value="" aria-label="{{label}}"></td>{{/cells}}
+                    <td><input type="checkbox" name="{{corename}}" value="1" checked aria-label="{{#str}}field_iscore, mod_vocabmastery{{/str}}"></td>
+                </tr>
+                {{/newrows}}
+            </tbody>
+        </table>
+    </div>
+    <div class="vm-stickybar">
+        <button type="button" class="btn btn-secondary" id="vm-addrow">{{#str}}addrows, mod_vocabmastery{{/str}}</button>
+        <button type="submit" class="btn btn-primary">{{#str}}savechanges{{/str}}</button>
+    </div>
+</form>

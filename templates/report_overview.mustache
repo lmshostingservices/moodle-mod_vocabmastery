@@ -1,0 +1,55 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocabmastery/report_overview
+
+    Class overview table.
+
+    Example context (json):
+    {
+        "rows": [{"url": "#", "name": "Anna Müller", "progress": 82, "passed": "18 / 24", "accuracy": "91%",
+            "answers": 420, "difficult": 3, "lastseen": "27/09/26, 10:00"}]
+    }
+}}
+<div class="table-responsive">
+<table class="table table-sm table-striped table-hover vm-report-table">
+    <thead><tr>
+        <th scope="col">{{#str}}student, mod_vocabmastery{{/str}}</th>
+        <th scope="col">{{#str}}progress, mod_vocabmastery{{/str}}</th>
+        <th scope="col">{{#str}}topicspassed, mod_vocabmastery{{/str}}</th>
+        <th scope="col">{{#str}}accuracy, mod_vocabmastery{{/str}}</th>
+        <th scope="col">{{#str}}answers, mod_vocabmastery{{/str}}</th>
+        <th scope="col">{{#str}}difficultitems, mod_vocabmastery{{/str}}</th>
+        <th scope="col">{{#str}}lastpractice, mod_vocabmastery{{/str}}</th>
+    </tr></thead>
+    <tbody>
+        {{#rows}}
+        <tr>
+            <td><a href="{{url}}">{{name}}</a></td>
+            <td><b>{{progress}}%</b>
+                <div class="progress vm-report-progress"><div class="progress-bar" role="progressbar" style="width: {{progress}}%"
+                    aria-valuenow="{{progress}}" aria-valuemin="0" aria-valuemax="100" aria-label="{{#str}}progress, mod_vocabmastery{{/str}}"></div></div></td>
+            <td>{{passed}}</td>
+            <td>{{accuracy}}</td>
+            <td>{{answers}}</td>
+            <td>{{difficult}}</td>
+            <td>{{lastseen}}</td>
+        </tr>
+        {{/rows}}
+    </tbody>
+</table>
+</div>
