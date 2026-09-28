@@ -1933,3 +1933,7 @@
 .path-mod-vocabmastery.vm-noattempt [data-action="vm-start"] {
     display: none;
 }
+
+.path-mod-vocabmastery .vm-activation-table {
+    max-width: 44rem;
+}

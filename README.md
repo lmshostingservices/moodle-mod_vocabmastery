@@ -4,7 +4,7 @@ A Moodle activity for vocabulary that has to be memorised rather than derived fr
 
 Nothing language-specific is hard-coded. German der/die/das, A1/A2/B1 and lesson names are **content**, not code.
 
-- Component: `mod_vocabmastery`, version 0.9.2 (stable)
+- Component: `mod_vocabmastery`, version 0.9.4 (stable)
 - Target: Moodle 4.4 – 5.2 (`requires` 2024042200, `supported` [404, 502]). Runtime-tested on Moodle 5.0.10 / PHP 8.4 /
   PostgreSQL 16 (full) and Moodle 4.4.12 / PHP 8.3 (install, Excel import, PHPUnit); the other versions are covered by the CI matrix in `.github/workflows/ci.yml` (repository only, not in the ZIP).
 - Moodle code checker (moodle-cs): 0 errors, 0 warnings. PHPDoc checker (local_moodlecheck): 0 errors. Grunt (ESLint,
@@ -89,7 +89,20 @@ A central Site ID is never combined with a local API key (or the reverse), centr
 plugin's settings, and the API key is never sent to JavaScript, templates, AJAX responses or logs. The settings page shows
 which source is in use and the Site ID, never the key.
 
-Version 0.9.2 only provides the resolver and settings; no feature in this version calls LMS Labs yet.
+### Activation (one-time unlock)
+
+Administrators can open **Site administration › Plugins › Activity modules › Vocabulary Mastery › LMS Labs activation**. The page shows:
+
+- the credential source, with links to its settings;
+- access (Not checked / Locked / Unlocked / Unable to verify);
+- the credit balance, including unlimited;
+- the live one-time price.
+
+**Check access** is free (`POST /api/plugin-unlock/verify`). **Unlock…** runs a free check, loads the live price and release from `GET /api/plugin-versions`, and asks for explicit confirmation. Only then does it send `POST /api/plugin-unlock` with that release SHA-256 and price. After an uncertain result, another unlock is blocked until an access check gives a definite answer.
+
+**Licensing:** activation status is informational only. The plugin's locks are learning-progression locks (topics unlock as students pass them), not commercial entitlement. No feature is disabled on an unactivated site, and no runtime licence check or connectivity requirement exists. Adding one needs separate owner approval.
+
+There are no metered or AI charges: no AI generation, speech or AI-provider calls.
 
 ## Moodle integration
 

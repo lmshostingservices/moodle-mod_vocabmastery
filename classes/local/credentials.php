@@ -30,11 +30,11 @@ namespace mod_vocabmastery\local;
  */
 final class credentials {
     /** Source: Central Config. */
-    const SOURCE_CENTRAL = 'central';
+    public const SOURCE_CENTRAL = 'central';
     /** Source: this plugin's settings. */
-    const SOURCE_LOCAL = 'local';
+    public const SOURCE_LOCAL = 'local';
     /** Source: none (not configured). */
-    const SOURCE_NONE = 'none';
+    public const SOURCE_NONE = 'none';
 
     /**
      * Complete central pair, if Central Config is installed and configured.

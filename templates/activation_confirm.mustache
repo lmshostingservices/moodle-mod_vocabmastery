@@ -1,0 +1,61 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocabmastery/activation_confirm
+
+    Explicit confirmation before spending LMS Labs credits. Cancel sends nothing to LMS Labs.
+
+    Example context (json):
+    {
+        "actionurl": "https://example.com/mod/vocabmastery/activation.php", "sesskey": "abc",
+        "credits": 50, "free": false, "releasesha": "0edd4302132160b24226d0022de83f23f840a1574c31cd1f9233b19d745ba613",
+        "releaseshort": "0edd43021321", "balance": "120", "hasbalance": true
+    }
+}}
+<div class="vm-activation">
+    <h3 class="h5">{{#str}}act_confirm_title, mod_vocabmastery{{/str}}</h3>
+    <div class="alert alert-warning">
+        {{#free}}{{#str}}act_confirm_free, mod_vocabmastery{{/str}}{{/free}}
+        {{^free}}{{#str}}act_confirm_spend, mod_vocabmastery, {{credits}}{{/str}}{{/free}}
+    </div>
+    {{#lowbalance}}
+    <div class="alert alert-warning">{{#str}}act_confirm_lowbalance, mod_vocabmastery{{/str}}</div>
+    {{/lowbalance}}
+    <table class="table table-sm vm-activation-table">
+        <tbody>
+            <tr><th scope="row">{{#str}}act_price, mod_vocabmastery{{/str}}</th><td>{{#str}}act_pricecredits, mod_vocabmastery, {{credits}}{{/str}}</td></tr>
+            <tr><th scope="row">{{#str}}act_balance, mod_vocabmastery{{/str}}</th><td>{{#hasbalance}}{{balance}}{{/hasbalance}}{{^hasbalance}}{{#str}}act_balanceunknown, mod_vocabmastery{{/str}}{{/hasbalance}}</td></tr>
+            <tr><th scope="row">{{#str}}act_releasesha, mod_vocabmastery{{/str}}</th><td><code>{{releaseshort}}…</code></td></tr>
+        </tbody>
+    </table>
+    <form method="post" action="{{actionurl}}">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <input type="hidden" name="action" value="unlock">
+        <input type="hidden" name="releasesha" value="{{releasesha}}">
+        <input type="hidden" name="expectedcredits" value="{{credits}}">
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="confirmspend" value="1" id="vm-confirmspend" required>
+            <label class="form-check-label" for="vm-confirmspend">{{#str}}act_confirm_checkbox, mod_vocabmastery, {{credits}}{{/str}}</label>
+        </div>
+        <button type="submit" class="btn btn-primary">{{#str}}act_confirm_button, mod_vocabmastery{{/str}}</button>
+    </form>
+    <form method="post" action="{{actionurl}}" class="mt-2">
+        <input type="hidden" name="sesskey" value="{{sesskey}}">
+        <input type="hidden" name="action" value="cancel">
+        <button type="submit" class="btn btn-secondary">{{#str}}cancel{{/str}}</button>
+    </form>
+</div>

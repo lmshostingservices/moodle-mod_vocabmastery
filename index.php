@@ -51,6 +51,9 @@ $table = new html_table();
 $table->head = [get_string('name'), get_string('progress', 'mod_vocabmastery')];
 foreach ($instances as $inst) {
     $cm = get_coursemodule_from_instance('vocabmastery', $inst->id, $id);
+    if (!has_capability('mod/vocabmastery:view', context_module::instance($cm->id))) {
+        continue;
+    }
     $link = html_writer::link(
         new moodle_url('/mod/vocabmastery/view.php', ['id' => $inst->coursemodule]),
         format_string($inst->name),

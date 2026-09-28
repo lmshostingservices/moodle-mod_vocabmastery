@@ -24,6 +24,19 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+// Settings page and the activation page live together in one category.
+$ADMIN->add('modsettings', new admin_category(
+    'modvocabmasteryfolder',
+    new lang_string('pluginname', 'mod_vocabmastery'),
+    $module->is_enabled() === false
+));
+$settings = new admin_settingpage(
+    $section,
+    get_string('settings', 'moodle'),
+    'moodle/site:config',
+    $module->is_enabled() === false
+);
+
 if ($ADMIN->fulltree) {
     $status = \mod_vocabmastery\local\credentials::status();
     $statuscontext = [
@@ -34,6 +47,7 @@ if ($ADMIN->fulltree) {
         'centralinstalled' => $status['centralinstalled'],
         'centralurl' => $status['centralinstalled']
             ? (new moodle_url('/admin/settings.php', ['section' => 'local_aiconfig']))->out(false) : null,
+        'activationurl' => (new moodle_url('/mod/vocabmastery/activation.php'))->out(false),
     ];
     $settings->add(new admin_setting_heading(
         'mod_vocabmastery/lmslabsheading',
@@ -54,3 +68,14 @@ if ($ADMIN->fulltree) {
         ''
     ));
 }
+
+$ADMIN->add('modvocabmasteryfolder', $settings);
+$ADMIN->add('modvocabmasteryfolder', new admin_externalpage(
+    'mod_vocabmastery_activation',
+    new lang_string('act_title', 'mod_vocabmastery'),
+    new moodle_url('/mod/vocabmastery/activation.php'),
+    'moodle/site:config',
+    $module->is_enabled() === false
+));
+// Stop core adding the page a second time.
+$settings = null;
