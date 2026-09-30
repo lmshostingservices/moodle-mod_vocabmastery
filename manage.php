@@ -92,6 +92,7 @@ if ($action === 'delete') {
     if (optional_param('confirm', 0, PARAM_BOOL) && confirm_sesskey()) {
         $fn = 'delete_' . $type;
         content::$fn($itemid);
+        content::queue_recompute($vmid);
         redirect($baseurl, get_string('deleted', $c, format_string($rec->name)), null, \core\output\notification::NOTIFY_SUCCESS);
     }
     echo $OUTPUT->header();
@@ -204,6 +205,7 @@ if ($action === 'editset') {
             $rec->id = $data->setid;
             $rec->timemodified = time();
             $DB->update_record('vocabmastery_set', $rec);
+            content::queue_recompute($vmid);
             $newid = $data->setid;
         } else {
             $newid = content::add_set($vmid, (int)$data->topicid, (array)$rec);
@@ -248,6 +250,14 @@ $actions = function (string $type, int $itemid, bool $first, bool $last, array $
 };
 
 $totals = content::counts($vmid);
+$flagcounts = $DB->get_records_sql_menu(
+    "SELECT i.setid, COUNT(1)
+       FROM {vocabmastery_flag} f
+       JOIN {vocabmastery_item} i ON i.id = f.itemid
+      WHERE f.vocabmasteryid = :vid AND f.resolved = 0
+   GROUP BY i.setid",
+    ['vid' => $vmid]
+);
 $levels = array_values($instance->get_levels());
 $levelsdata = [];
 foreach ($levels as $li => $level) {
@@ -263,6 +273,7 @@ foreach ($levels as $li => $level) {
                 'items' => get_string('nitems', $c, (object)['total' => (int)($counts[$set->id] ?? 0),
                     'core' => (int)($corecounts[$set->id] ?? 0)]),
                 'gated' => (bool)$set->gated,
+                'reports' => !empty($flagcounts[$set->id]) ? get_string('reports_count', $c, (int)$flagcounts[$set->id]) : '',
                 'answers' => $set->answermode === 'fixed' && $set->itemtype === 'choice'
                     ? str_replace("\n", ' / ', $set->options)
                     : get_string($set->itemtype === 'typed' ? 'itemtype_typed' : 'answermode_pool', $c),

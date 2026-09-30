@@ -48,7 +48,19 @@ $PAGE->activityheader->disable();
 $report = new report($instance);
 $groupmode = groups_get_activity_groupmode($instance->cm);
 $groupid = $groupmode ? (int)groups_get_activity_group($instance->cm, true) : 0;
-$students = $report->students($groupid);
+// Separate groups: a teacher without "access all groups" only ever sees their own groups.
+$restricted = $groupmode == SEPARATEGROUPS && !has_capability('moodle/site:accessallgroups', $context);
+$students = ($restricted && !$groupid) ? [] : $report->students($groupid);
+// A learner outside the list (e.g. unenrolled since) is only shown to teachers who can see all groups.
+$canseeuser = function (int $uid) use ($students, $restricted, $DB, $instance): bool {
+    return isset($students[$uid]) || (!$restricted && $DB->record_exists(
+        'vocabmastery_topicstate',
+        ['userid' => $uid, 'vocabmasteryid' => $instance->vm->id]
+    ));
+};
+if ($userid && !$canseeuser($userid)) {
+    throw new moodle_exception('invaliduser');
+}
 $topics = $instance->get_topics();
 $levels = $instance->get_levels();
 
@@ -61,16 +73,24 @@ if ($download) {
     require_sesskey();
     $rows = $report->overview($students);
     $states = $report->topic_states(array_keys($students));
-    $columns = [get_string('student', $c), get_string('email'), get_string('progress', $c),
+    $identity = $report->identity_fields();
+    $columns = array_merge([get_string('student', $c)], array_map(
+        fn($f) => \core_user\fields::get_display_name($f),
+        $identity
+    ), [get_string('progress', $c),
         get_string('topicspassed', $c), get_string('topics', $c), get_string('accuracy', $c), get_string('answers', $c),
-        get_string('difficultitems', $c), get_string('lastpractice', $c)];
+        get_string('difficultitems', $c), get_string('lastpractice', $c)]);
     foreach ($topics as $t) {
         $columns[] = format_string($levels[$t->levelid]->name) . ' · ' . format_string($t->name);
     }
     $data = [];
     foreach ($rows as $uid => $r) {
-        $line = [$fullname($r->user), $r->user->email, $r->progress, $r->passed, $r->topics,
-            $r->accuracy ?? '', $r->answers, $r->difficult, $r->lastseen ? userdate($r->lastseen, '%Y-%m-%d %H:%M') : ''];
+        $line = array_merge(
+            [$fullname($r->user)],
+            array_map(fn($f) => (string)($r->user->$f ?? ''), $identity),
+            [$r->progress, $r->passed, $r->topics, $r->accuracy ?? '', $r->answers, $r->difficult,
+                $r->lastseen ? userdate($r->lastseen, '%Y-%m-%d %H:%M') : '']
+        );
         foreach ($topics as $t) {
             $st = $states[$uid][(int)$t->id] ?? null;
             $line[] = $st ? ($st->passed ? get_string('status_passed', $c) : round((float)$st->mastery) . '%') : '';
@@ -124,20 +144,14 @@ if ($groupmode) {
     groups_print_activity_menu($instance->cm, $instance->url('report.php', ['tab' => $tab]));
 }
 
-// Student detail.
+// Learner detail (access checked above).
 if ($userid) {
-    if (
-        !isset($students[$userid]) && !$DB->record_exists('vocabmastery_topicstate', ['userid' => $userid,
-            'vocabmasteryid' => $instance->vm->id])
-    ) {
-        throw new moodle_exception('invaliduser');
-    }
     $u = core_user::get_user($userid, '*', MUST_EXIST);
     $progress = new progress($instance, $userid);
     $summaries = $progress->get_summaries();
     $leveldata = [];
     foreach ($levels as $level) {
-        $ts = array_filter($summaries, fn($s) => $s->levelid === (int)$level->id);
+        $ts = array_filter($summaries, fn($s) => $s->levelid === (int)$level->id && !$s->empty);
         $p = count(array_filter($ts, fn($s) => $s->passed));
         $avg = $ts ? round(array_sum(array_map(fn($s) => $s->passed ? 100 : min(99, $s->mastery), $ts)) / count($ts)) : 0;
         $leveldata[] = ['name' => format_string($level->name),

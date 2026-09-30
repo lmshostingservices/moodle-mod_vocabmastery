@@ -17,45 +17,124 @@
 {{!
     @template mod_vocabmastery/trainer_summary
 
-    End-of-session summary.
+    End-of-session results: score ring, time, comparison with last time, answer grid, insights per set,
+    recommended next step and a review of every answer.
 
     Example context (json):
     {
-        "icon": {"ic_award": true}, "iconclass": "vm-summary-icon-award", "title": "Passed!", "big": "94%",
-        "bigclass": "vm-good", "lines": [{"text": "17 / 18 correct"}], "showmastery": true, "masterylabel": "Topic mastery now:",
-        "mastery": 94, "newlypassed": "Topic mastered - 94%", "wherenextlabel": "Where next?",
-        "routes": [{"url": "#", "type": "horizontal", "icon": {"ic_right": true}, "label": "Continue in this level",
-            "name": "A1 · Lektion 2"}],
-        "mistakeslabel": "Words to review", "mistakes": [{"full": "die Frau", "translation": "woman"}],
+        "modelabel": "Practice", "headline": "Solid work.", "tip": "Decent result. Keep practising the words below.",
+        "hasring": true, "ringpct": 60, "ringdash": "195.9 326.7", "ringband": "vm-band-mid", "ringlabel": "60%",
+        "ringsub": "6 of 10 right", "big": "", "bigsub": "",
+        "meta": [{"text": "Completed in 0:34", "cls": ""}, {"text": "New personal best!", "cls": "vm-meta-best"}],
+        "improve": {"text": "Last time 45% → now 60% (+15)", "bigjump": "Big jump!", "cls": "vm-meta-improve"},
+        "newlypassed": "Topic mastered – 94%",
+        "hasgrid": true, "gridlabel": "Your answers", "correctlabel": "Correct", "wronglabel": "Wrong",
+        "grid": [{"n": 1, "ok": true, "title": "die Frau"}, {"n": 2, "ok": false, "title": "der Herr"}],
+        "hasinsights": true, "hasstrong": true, "haswork": true, "stronglabel": "You're strong in", "worklabel": "Let's work on",
+        "strong": [{"name": "Nomen + Artikel", "pct": 100}], "work": [{"name": "Verben", "pct": 50}],
+        "hasnext": true, "nextlabel": "What to try next", "nexttitle": "Practise the 4 words you missed",
+        "nexttext": "They come first, then mixed with a few you know.", "nextaction": "mistakes", "nexturl": "",
+        "nextbutton": "Start", "hasroutes": false, "routes": [],
+        "hasreview": true, "reviewlabel": "Review answers (10)",
+        "review": [{"itemid": 5, "ok": false, "full": "der Herr", "given": "Your answer: die", "translation": "Mr",
+            "reportlabel": "Report a problem"}],
         "actions": [{"action": "back", "label": "Back to topic", "cls": "vm-btn-ghost"}],
-        "icons": {"trophy": {"ic_trophy": true}, "award": {"ic_award": true} }
+        "failedsave": "",
+        "icons": {"check": {"ic_check": true}, "close": {"ic_close": true}, "trophy": {"ic_trophy": true},
+            "award": {"ic_award": true}, "right": {"ic_right": true}, "down": {"ic_down": true} }
     }
 }}
-<div class="vm-summary-icon {{iconclass}}">{{#icon}}{{> mod_vocabmastery/icon}}{{/icon}}</div>
-<div class="vm-summary-title">{{title}}</div>
-{{#best}}<div class="vm-pb">{{#icons.trophy}}{{> mod_vocabmastery/icon}}{{/icons.trophy}}<span>{{bestlabel}}</span></div>{{/best}}
-<div class="vm-summary-big {{bigclass}}">{{big}}</div>
-{{#lines}}<div class="vm-muted">{{text}}</div>{{/lines}}
-{{#showmastery}}<div class="vm-summary-mastery"><span>{{masterylabel}}</span> <b>{{mastery}}%</b></div>{{/showmastery}}
-{{#newlypassed}}<div class="vm-passed-badge vm-pop">{{#icons.award}}{{> mod_vocabmastery/icon}}{{/icons.award}}<span>{{newlypassed}}</span></div>{{/newlypassed}}
-{{#hasroutes}}
-<div class="vm-routes vm-route-list">
-    <div class="vm-section-label">{{wherenextlabel}}</div>
-    {{#routes}}
-    <a class="vm-route vm-route-{{type}}" href="{{url}}">
-        <span class="vm-route-icon">{{#icon}}{{> mod_vocabmastery/icon}}{{/icon}}</span>
-        <span class="vm-route-body"><span class="vm-route-lbl">{{label}}</span><span class="vm-route-name">{{name}}</span></span>
-    </a>
-    {{/routes}}
+<div class="vm-res">
+    <div class="vm-res-hero {{ringband}}">
+        {{#hasring}}
+        <div class="vm-res-ring" role="img" aria-label="{{ringlabel}} {{ringsub}}">
+            <svg viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+                <circle class="vm-res-ring-track" cx="60" cy="60" r="52"/>
+                {{#ringpct}}<circle class="vm-res-ring-fill" cx="60" cy="60" r="52" stroke-dasharray="{{ringdash}}"/>{{/ringpct}}
+            </svg>
+            <div class="vm-res-ring-text"><span class="vm-res-pct">{{ringlabel}}</span><span class="vm-res-ringsub">{{ringsub}}</span></div>
+        </div>
+        {{/hasring}}
+        {{^hasring}}
+        <div class="vm-res-bignum"><span class="vm-res-pct">{{big}}</span><span class="vm-res-ringsub">{{bigsub}}</span></div>
+        {{/hasring}}
+        <div class="vm-res-headline">{{headline}}</div>
+        {{#tip}}<div class="vm-res-tip">{{tip}}</div>{{/tip}}
+    </div>
+
+    <div class="vm-res-body">
+        <div class="vm-res-meta">
+            {{#meta}}<span class="vm-res-chip {{cls}}">{{text}}</span>{{/meta}}
+            {{#improve}}<span class="vm-res-chip {{cls}}">{{text}}{{#bigjump}} <b class="vm-res-jump">{{bigjump}}</b>{{/bigjump}}</span>{{/improve}}
+        </div>
+        {{#newlypassed}}<div class="vm-passed-badge vm-pop">{{#icons.award}}{{> mod_vocabmastery/icon}}{{/icons.award}}<span>{{newlypassed}}</span></div>{{/newlypassed}}
+
+        {{#hasgrid}}
+        <div class="vm-section-label">{{gridlabel}}</div>
+        <ol class="vm-res-grid">
+            {{#grid}}<li class="{{#ok}}vm-ok{{/ok}}{{^ok}}vm-no{{/ok}}" title="{{title}}"><span class="vm-res-n">{{n}}</span>{{#ok}}{{#icons.check}}{{> mod_vocabmastery/icon}}{{/icons.check}}<span class="sr-only visually-hidden">{{correctlabel}}</span>{{/ok}}{{^ok}}{{#icons.close}}{{> mod_vocabmastery/icon}}{{/icons.close}}<span class="sr-only visually-hidden">{{wronglabel}}</span>{{/ok}}</li>{{/grid}}
+        </ol>
+        {{/hasgrid}}
+
+        {{#hasinsights}}
+        <div class="vm-res-insights">
+            {{#hasstrong}}
+            <div class="vm-res-ins vm-res-ins-good">
+                <div class="vm-res-ins-title">{{stronglabel}}</div>
+                {{#strong}}<div class="vm-res-ins-row"><span>{{name}}</span><b>{{pct}}%</b></div>{{/strong}}
+            </div>
+            {{/hasstrong}}
+            {{#haswork}}
+            <div class="vm-res-ins vm-res-ins-work">
+                <div class="vm-res-ins-title">{{worklabel}}</div>
+                {{#work}}<div class="vm-res-ins-row"><span>{{name}}</span><b>{{pct}}%</b></div>{{/work}}
+            </div>
+            {{/haswork}}
+        </div>
+        {{/hasinsights}}
+
+        {{#hasnext}}
+        <div class="vm-res-next">
+            <div class="vm-section-label">{{nextlabel}}</div>
+            <div class="vm-res-next-title">{{nexttitle}}</div>
+            {{#nexttext}}<div class="vm-res-next-text">{{nexttext}}</div>{{/nexttext}}
+            {{#nextaction}}<button type="button" class="vm-btn vm-btn-primary vm-res-next-btn" data-action="{{nextaction}}">{{nextbutton}} {{#icons.right}}{{> mod_vocabmastery/icon}}{{/icons.right}}</button>{{/nextaction}}
+        </div>
+        {{/hasnext}}
+
+        {{#hasroutes}}
+        <div class="vm-routes vm-route-list">
+            <div class="vm-section-label">{{nextlabel}}</div>
+            {{#routes}}
+            <a class="vm-route vm-route-{{type}}" href="{{url}}">
+                <span class="vm-route-icon">{{#icon}}{{> mod_vocabmastery/icon}}{{/icon}}</span>
+                <span class="vm-route-body"><span class="vm-route-lbl">{{label}}</span><span class="vm-route-name">{{name}}</span></span>
+            </a>
+            {{/routes}}
+        </div>
+        {{/hasroutes}}
+
+        <div class="vm-tr-actions vm-summary-actions">
+            {{#actions}}<button type="button" class="vm-btn {{cls}}" data-action="{{action}}">{{label}}</button>{{/actions}}
+        </div>
+
+        {{#hasreview}}
+        <details class="vm-res-review">
+            <summary>{{reviewlabel}}</summary>
+            <ul class="vm-res-review-list">
+                {{#review}}
+                <li class="{{#ok}}vm-ok{{/ok}}{{^ok}}vm-no{{/ok}}">
+                    <span class="vm-res-review-icon">{{#ok}}{{#icons.check}}{{> mod_vocabmastery/icon}}{{/icons.check}}<span class="sr-only visually-hidden">{{correctlabel}}</span>{{/ok}}{{^ok}}{{#icons.close}}{{> mod_vocabmastery/icon}}{{/icons.close}}<span class="sr-only visually-hidden">{{wronglabel}}</span>{{/ok}}</span>
+                    <span class="vm-res-review-main">
+                        <span class="vm-word">{{full}}</span>{{#translation}} <span class="vm-muted">{{translation}}</span>{{/translation}}
+                        {{#given}}<span class="vm-res-given">{{given}}</span>{{/given}}
+                    </span>
+                    <span class="vm-report-slot"><button type="button" class="vm-linkbtn" data-action="report" data-itemid="{{itemid}}">{{reportlabel}}</button></span>
+                </li>
+                {{/review}}
+            </ul>
+        </details>
+        {{/hasreview}}
+        {{#failedsave}}<div class="vm-note">{{failedsave}}</div>{{/failedsave}}
+    </div>
 </div>
-{{/hasroutes}}
-{{#hasmistakes}}
-<div class="vm-section-label">{{mistakeslabel}}</div>
-<ul class="vm-wordlist vm-wordlist-compact">
-    {{#mistakes}}<li><span class="vm-word">{{full}}</span>{{#translation}}<span class="vm-muted">{{translation}}</span>{{/translation}}</li>{{/mistakes}}
-</ul>
-{{/hasmistakes}}
-<div class="vm-tr-actions vm-summary-actions">
-    {{#actions}}<button type="button" class="vm-btn {{cls}}" data-action="{{action}}">{{label}}</button>{{/actions}}
-</div>
-{{#failedsave}}<div class="vm-note">{{failedsave}}</div>{{/failedsave}}

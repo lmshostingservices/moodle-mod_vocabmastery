@@ -39,5 +39,28 @@ function xmldb_vocabmastery_upgrade($oldversion) {
         $dbman->change_field_default($table, $field);
         upgrade_mod_savepoint(true, 2026092800, 'vocabmastery');
     }
+
+    if ($oldversion < 2026092900) {
+        // Learners can report a problem with a word.
+        $table = new xmldb_table('vocabmastery_flag');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('vocabmasteryid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('reason', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'other');
+        $table->add_field('commenttext', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('resolved', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('vocabmasteryid', XMLDB_KEY_FOREIGN, ['vocabmasteryid'], 'vocabmastery', ['id']);
+        $table->add_key('itemid', XMLDB_KEY_FOREIGN, ['itemid'], 'vocabmastery_item', ['id']);
+        $table->add_key('userid', XMLDB_KEY_FOREIGN, ['userid'], 'user', ['id']);
+        $table->add_index('vmresolved', XMLDB_INDEX_NOTUNIQUE, ['vocabmasteryid', 'resolved']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_mod_savepoint(true, 2026092900, 'vocabmastery');
+    }
     return true;
 }

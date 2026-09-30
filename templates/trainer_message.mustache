@@ -17,14 +17,15 @@
 {{!
     @template mod_vocabmastery/trainer_message
 
-    Loading or error state inside the trainer stage.
+    Loading or error state inside the trainer stage, with an optional retry button.
 
     Example context (json):
     {
-        "message": "Loading...", "loading": true
+        "message": "Loading…", "loading": true
     }
 }}
 <div class="vm-card {{#loading}}vm-loading{{/loading}}{{^loading}}vm-empty{{/loading}}" role="status">
     <p>{{message}}</p>
+    {{#retrylabel}}<button type="button" class="vm-btn vm-btn-primary" data-action="finishretry">{{retrylabel}}</button>{{/retrylabel}}
     {{#backurl}}<a class="vm-btn vm-btn-ghost" href="{{backurl}}">{{backlabel}}</a>{{/backurl}}
 </div>

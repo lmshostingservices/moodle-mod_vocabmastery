@@ -51,6 +51,7 @@ class restore_vocabmastery_activity_structure_step extends restore_activity_stru
                 'vocabmastery_response',
                 '/activity/vocabmastery/attempts/attempt/responses/response'
             );
+            $paths[] = new restore_path_element('vocabmastery_flag', '/activity/vocabmastery/flags/flag');
         }
         return $this->prepare_activity_structure($paths);
     }
@@ -169,6 +170,7 @@ class restore_vocabmastery_activity_structure_step extends restore_activity_stru
         $old = $data->id;
         $data->vocabmasteryid = $this->get_new_parentid('vocabmastery');
         $data->userid = $this->get_mappingid('user', $data->userid);
+        $topicwas = (bool)$data->topicid;
         $data->topicid = $data->topicid ? (int)$this->get_mappingid('vocabmastery_topic', $data->topicid) : 0;
         $data->setid = $data->setid ? (int)$this->get_mappingid('vocabmastery_set', $data->setid) : 0;
         $ids = [];
@@ -178,7 +180,8 @@ class restore_vocabmastery_activity_structure_step extends restore_activity_stru
             }
         }
         $data->itemids = implode(',', $ids);
-        if (!$data->userid) {
+        if (!$data->userid || ($topicwas && !$data->topicid)) {
+            // Unknown user, or a topic session whose topic was not restored.
             return;
         }
         $this->set_mapping('vocabmastery_attempt', $old, $DB->insert_record('vocabmastery_attempt', $data));
@@ -198,6 +201,22 @@ class restore_vocabmastery_activity_structure_step extends restore_activity_stru
         $data->itemid = $this->get_mappingid('vocabmastery_item', $data->itemid);
         if ($data->attemptid && $data->userid && $data->itemid) {
             $DB->insert_record('vocabmastery_response', $data);
+        }
+    }
+
+    /**
+     * Word report from a learner.
+     *
+     * @param array $data
+     */
+    protected function process_vocabmastery_flag($data) {
+        global $DB;
+        $data = (object)$data;
+        $data->vocabmasteryid = $this->get_new_parentid('vocabmastery');
+        $data->userid = $this->get_mappingid('user', $data->userid);
+        $data->itemid = $this->get_mappingid('vocabmastery_item', $data->itemid);
+        if ($data->userid && $data->itemid) {
+            $DB->insert_record('vocabmastery_flag', $data);
         }
     }
 

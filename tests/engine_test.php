@@ -117,4 +117,39 @@ final class engine_test extends \advanced_testcase {
             $this->assertSame('', $q['hint']);
         }
     }
+
+    public function test_finish_returns_review_and_first_try_score(): void {
+        [$instance, $data, $userid] = $this->setup_activity();
+        $engine = new engine($instance, $userid);
+        $session = $engine->start('practice', $data['topicid'], 0);
+        $attemptid = (int)$session['attempt']->id;
+        $ids = $data['itemids'];
+        // First word wrong then right, the other two right first time.
+        $engine->record($attemptid, $ids[0], 'die', 1000, false);
+        $engine->record($attemptid, $ids[1], 'die', 1000, false);
+        $engine->record($attemptid, $ids[2], 'das', 1000, false);
+        $engine->record($attemptid, $ids[0], 'der', 1000, false);
+        $result = $engine->finish($attemptid, 0);
+        $this->assertCount(3, $result['answers']);
+        $this->assertFalse($result['answers'][0]['iscorrect']);
+        $this->assertSame('die', $result['answers'][0]['given']);
+        $this->assertTrue($result['answers'][0]['prefix'], 'article answers are written before the word');
+        $this->assertEquals(66.67, $result['score']);
+        $this->assertSame(-1.0, $result['previousscore']);
+        $this->assertSame([['name' => 'Nomen + Artikel', 'correct' => 2, 'total' => 3]], $result['sets']);
+        $this->assertGreaterThanOrEqual(0, $result['seconds']);
+        // A second session compares with the first.
+        $second = $engine->start('practice', $data['topicid'], 0);
+        $engine->record((int)$second['attempt']->id, $ids[0], 'der', 1000, false);
+        $this->assertEquals(66.67, $engine->finish((int)$second['attempt']->id, 0)['previousscore']);
+    }
+
+    public function test_answer_prefix_rule(): void {
+        $fixed = (object)['answermode' => 'fixed'];
+        $pool = (object)['answermode' => 'pool'];
+        $this->assertTrue(engine::answer_is_prefix($fixed, 'die'));
+        $this->assertFalse(engine::answer_is_prefix($fixed, 'to live'));
+        $this->assertFalse(engine::answer_is_prefix($fixed, 'über + Akk.'));
+        $this->assertFalse(engine::answer_is_prefix($pool, 'die'));
+    }
 }

@@ -48,6 +48,7 @@ class mod_vocabmastery_mod_form extends moodleform_mod {
         $mform->setType('targetlanguage', PARAM_TEXT);
         $mform->addHelpButton('targetlanguage', 'targetlanguage', $c);
         $mform->addElement('text', 'nativelanguage', get_string('nativelanguage', $c), ['size' => 30]);
+        $mform->addHelpButton('nativelanguage', 'nativelanguage', $c);
         $mform->setType('nativelanguage', PARAM_TEXT);
 
         // Mastery.
@@ -77,6 +78,7 @@ class mod_vocabmastery_mod_form extends moodleform_mod {
         $mform->addHelpButton('itemcorrectrequired', 'itemcorrectrequired', $c);
         $mform->addElement('select', 'itemstreakrequired', get_string('itemstreakrequired', $c), $opts);
         $mform->setDefault('itemstreakrequired', 2);
+        $mform->addHelpButton('itemstreakrequired', 'itemstreakrequired', $c);
 
         // Progression.
         $mform->addElement('header', 'progressionhdr', get_string('progressionsettings', $c));
@@ -92,21 +94,27 @@ class mod_vocabmastery_mod_form extends moodleform_mod {
         // Training modes.
         $mform->addElement('header', 'modeshdr', get_string('trainingmodes', $c));
         $mform->addElement('advcheckbox', 'enablelearn', get_string('enablelearn', $c));
+        $mform->addHelpButton('enablelearn', 'enablelearn', $c);
         $mform->setDefault('enablelearn', 1);
         $mform->addElement('advcheckbox', 'requirelearn', get_string('requirelearn', $c));
+        $mform->addHelpButton('requirelearn', 'requirelearn', $c);
         $mform->disabledIf('requirelearn', 'enablelearn');
         $mform->addElement('advcheckbox', 'enableblitz', get_string('enableblitz', $c));
+        $mform->addHelpButton('enableblitz', 'enableblitz', $c);
         $mform->setDefault('enableblitz', 1);
         $mform->addElement('text', 'blitzduration', get_string('blitzduration', $c), ['size' => 4]);
         $mform->setType('blitzduration', PARAM_INT);
         $mform->setDefault('blitzduration', 60);
+        $mform->addHelpButton('blitzduration', 'blitzduration', $c);
         $mform->disabledIf('blitzduration', 'enableblitz');
         $mform->addElement('advcheckbox', 'blitzcountsmastery', get_string('blitzcountsmastery', $c));
         $mform->addHelpButton('blitzcountsmastery', 'blitzcountsmastery', $c);
         $mform->disabledIf('blitzcountsmastery', 'enableblitz');
         $mform->addElement('advcheckbox', 'enablestreak', get_string('enablestreak', $c));
+        $mform->addHelpButton('enablestreak', 'enablestreak', $c);
         $mform->setDefault('enablestreak', 1);
         $mform->addElement('advcheckbox', 'enablehints', get_string('enablehints', $c));
+        $mform->addHelpButton('enablehints', 'enablehints', $c);
         $mform->setDefault('enablehints', 1);
         $mform->addElement('advcheckbox', 'injectdifficult', get_string('injectdifficult', $c));
         $mform->setDefault('injectdifficult', 1);
@@ -116,6 +124,7 @@ class mod_vocabmastery_mod_form extends moodleform_mod {
             'dark' => get_string('colourscheme_dark', $c),
         ]);
         $mform->setDefault('colourscheme', 'light');
+        $mform->addHelpButton('colourscheme', 'colourscheme', $c);
 
         // Grade.
         $this->standard_grading_coursemodule_elements();
@@ -182,8 +191,10 @@ class mod_vocabmastery_mod_form extends moodleform_mod {
         $mform->setType('completiontopics' . $suffix, PARAM_INT);
         $mform->addGroup($group, 'completiontopicsgroup' . $suffix, '', ' ', false);
         $mform->disabledIf('completiontopics' . $suffix, 'completiontopicsenabled' . $suffix, 'notchecked');
+        $mform->addHelpButton('completiontopicsgroup' . $suffix, 'completiontopics', $c);
 
         $mform->addElement('checkbox', 'completionalltopics' . $suffix, '', get_string('completionalltopics', $c));
+        $mform->addHelpButton('completionalltopics' . $suffix, 'completionalltopics', $c);
 
         $group = [
             $mform->createElement('checkbox', 'completionprogressenabled' . $suffix, '', get_string('completionprogress', $c)),
@@ -192,6 +203,7 @@ class mod_vocabmastery_mod_form extends moodleform_mod {
         $mform->setType('completionprogress' . $suffix, PARAM_INT);
         $mform->addGroup($group, 'completionprogressgroup' . $suffix, '', ' ', false);
         $mform->disabledIf('completionprogress' . $suffix, 'completionprogressenabled' . $suffix, 'notchecked');
+        $mform->addHelpButton('completionprogressgroup' . $suffix, 'completionprogress', $c);
 
         return ['completiontopicsgroup' . $suffix, 'completionalltopics' . $suffix, 'completionprogressgroup' . $suffix];
     }

@@ -182,8 +182,38 @@ class content {
             [$in, $params] = $DB->get_in_or_equal($chunk, SQL_PARAMS_NAMED);
             $DB->delete_records_select('vocabmastery_itemstate', "itemid $in", $params);
             $DB->delete_records_select('vocabmastery_response', "itemid $in", $params);
+            $DB->delete_records_select('vocabmastery_flag', "itemid $in", $params);
             $DB->delete_records_select('vocabmastery_item', "id $in", $params);
         }
+    }
+
+    /**
+     * Delete the sessions (and their answers) of a topic or set.
+     *
+     * @param string $field topicid|setid
+     * @param int $id
+     */
+    protected static function delete_attempts(string $field, int $id): void {
+        global $DB;
+        $ids = $DB->get_fieldset_select('vocabmastery_attempt', 'id', "$field = :id", ['id' => $id]);
+        foreach (array_chunk($ids, 500) as $chunk) {
+            [$in, $params] = $DB->get_in_or_equal($chunk, SQL_PARAMS_NAMED);
+            $DB->delete_records_select('vocabmastery_response', "attemptid $in", $params);
+            $DB->delete_records_select('vocabmastery_attempt', "id $in", $params);
+        }
+    }
+
+    /**
+     * Recalculate learners' progress, grades and completion in the background after
+     * the words of an activity changed. Repeated calls queue a single task.
+     *
+     * @param int $vmid
+     */
+    public static function queue_recompute(int $vmid): void {
+        $task = new task\recompute_progress();
+        $task->set_custom_data(['vocabmasteryid' => $vmid]);
+        $task->set_component('mod_vocabmastery');
+        \core\task\manager::queue_adhoc_task($task, true);
     }
 
     /**
@@ -194,6 +224,7 @@ class content {
     public static function delete_set(int $setid): void {
         global $DB;
         self::delete_items($DB->get_fieldset_select('vocabmastery_item', 'id', 'setid = :setid', ['setid' => $setid]));
+        self::delete_attempts('setid', $setid);
         $DB->delete_records('vocabmastery_set', ['id' => $setid]);
     }
 
@@ -207,6 +238,7 @@ class content {
         foreach ($DB->get_fieldset_select('vocabmastery_set', 'id', 'topicid = :topicid', ['topicid' => $topicid]) as $sid) {
             self::delete_set((int)$sid);
         }
+        self::delete_attempts('topicid', $topicid);
         $DB->delete_records('vocabmastery_topicstate', ['topicid' => $topicid]);
         $DB->delete_records('vocabmastery_topic', ['id' => $topicid]);
     }

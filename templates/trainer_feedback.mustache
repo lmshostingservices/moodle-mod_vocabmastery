@@ -21,8 +21,8 @@
 
     Example context (json):
     {
-        "correct": false, "chosenmsg": "You chose \"die\"", "correctlabel": "Correct:", "full": "der Vater",
-        "sub": "father (Väter)", "extra": "This word will appear again shortly.",
+        "correct": false, "chosenmsg": "Your answer: die", "correctlabel": "Correct:", "full": "der Vater",
+        "sub": "father (Väter)", "extra": "This word will appear again shortly.", "itemid": 5, "reportlabel": "Report a problem",
         "icons": {"check": {"ic_check": true}, "close": {"ic_close": true} }
     }
 }}
@@ -37,3 +37,4 @@
 {{#explanation}}<div class="vm-tr-hint">{{explanation}}</div>{{/explanation}}
 {{/correct}}
 {{#extra}}<div class="vm-fb-extra">{{extra}}</div>{{/extra}}
+{{#reportlabel}}<div class="vm-report-slot vm-fb-report"><button type="button" class="vm-linkbtn" data-action="report" data-itemid="{{itemid}}">{{reportlabel}}</button></div>{{/reportlabel}}

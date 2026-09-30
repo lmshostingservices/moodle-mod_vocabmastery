@@ -45,7 +45,13 @@ class report {
      * @return stdClass[]
      */
     public function students(int $groupid = 0): array {
-        $fields = 'u.id, ' . implode(', ', \core_user\fields::get_name_fields(true)) . ', u.email, u.picture, u.imagealt';
+        $extra = array_map(fn($f) => 'u.' . $f, array_diff($this->identity_fields(), ['email']));
+        $fields = implode(', ', array_merge(
+            ['u.id'],
+            \core_user\fields::get_name_fields(true),
+            ['u.email', 'u.picture', 'u.imagealt'],
+            $extra
+        ));
         $users = get_enrolled_users(
             $this->instance->context,
             'mod/vocabmastery:attempt',
@@ -120,6 +126,35 @@ class report {
     }
 
     /**
+     * User identity fields (e.g. email) the current user may see here, following the
+     * site's "Show user identity" setting. Only standard user table fields are used.
+     *
+     * @return string[]
+     */
+    public function identity_fields(): array {
+        $standard = ['email', 'idnumber', 'username', 'institution', 'department', 'phone1', 'phone2', 'city',
+            'country', 'address'];
+        $fields = \core_user\fields::for_identity($this->instance->context, false)->get_required_fields();
+        return array_values(array_intersect($fields, $standard));
+    }
+
+    /**
+     * Topics that have at least one core word (the ones that count for progress).
+     *
+     * @return int[]
+     */
+    public function countable_topicids(): array {
+        global $DB;
+        return array_map('intval', $DB->get_fieldset_sql(
+            "SELECT DISTINCT s.topicid
+               FROM {vocabmastery_item} i
+               JOIN {vocabmastery_set} s ON s.id = i.setid
+              WHERE i.vocabmasteryid = :vid AND i.iscore = 1",
+            ['vid' => $this->instance->vm->id]
+        ));
+    }
+
+    /**
      * Overview rows.
      *
      * @param array $students
@@ -129,7 +164,7 @@ class report {
         $userids = array_keys($students);
         $states = $this->topic_states($userids);
         $stats = $this->answer_stats($userids);
-        $topics = $this->instance->get_topics();
+        $topics = array_intersect_key($this->instance->get_topics(), array_flip($this->countable_topicids()));
         $n = count($topics);
         $rows = [];
         foreach ($students as $uid => $u) {

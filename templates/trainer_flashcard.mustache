@@ -22,7 +22,7 @@
     Example context (json):
     {
         "setname": "Nomen + Artikel", "prompt": "Vater", "translation": "father", "full": "der Vater", "plural": "Väter",
-        "reveallabel": "Show answer", "knowlabel": "I know this", "morelabel": "Need more practice"
+        "reveallabel": "Show answer", "knowlabel": "I know this", "morelabel": "Need more practice", "spacekey": "Space"
     }
 }}
 <div class="vm-tr-instruction">{{setname}}</div>
@@ -35,7 +35,7 @@
     {{#explanation}}<div class="vm-muted vm-small">{{explanation}}</div>{{/explanation}}
 </div>
 <div class="vm-tr-actions">
-    <button type="button" class="vm-btn vm-btn-primary" data-action="reveal">{{reveallabel}}</button>
-    <button type="button" class="vm-btn vm-btn-good" data-action="know" hidden>{{knowlabel}}</button>
-    <button type="button" class="vm-btn vm-btn-warn" data-action="more" hidden>{{morelabel}}</button>
+    <button type="button" class="vm-btn vm-btn-primary" data-action="reveal" aria-keyshortcuts="Space">{{reveallabel}}<kbd class="vm-kbd" aria-hidden="true">{{spacekey}}</kbd></button>
+    <button type="button" class="vm-btn vm-btn-good" data-action="know" aria-keyshortcuts="1 ArrowRight" hidden>{{knowlabel}}<kbd class="vm-kbd" aria-hidden="true">1</kbd></button>
+    <button type="button" class="vm-btn vm-btn-warn" data-action="more" aria-keyshortcuts="2 ArrowLeft" hidden>{{morelabel}}<kbd class="vm-kbd" aria-hidden="true">2</kbd></button>
 </div>

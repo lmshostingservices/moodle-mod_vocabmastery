@@ -1,0 +1,45 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_vocabmastery/trainer_report
+
+    Inline form: a learner reports a problem with a word.
+
+    Example context (json):
+    {
+        "itemid": 5, "uid": "vmr5", "title": "What's wrong with this word?",
+        "reasons": [{"value": "wronganswer", "label": "The answer is wrong", "checked": true}],
+        "commentlabel": "Details (optional)", "sendlabel": "Send", "cancellabel": "Cancel"
+    }
+}}
+<form class="vm-report" data-itemid="{{itemid}}">
+    <fieldset>
+        <legend class="vm-report-title">{{title}}</legend>
+        <div class="vm-report-reasons">
+            {{#reasons}}
+            <label class="vm-report-reason"><input type="radio" name="{{uid}}-reason" value="{{value}}" {{#checked}}checked{{/checked}}> <span>{{label}}</span></label>
+            {{/reasons}}
+        </div>
+    </fieldset>
+    <label class="vm-report-commentlabel" for="{{uid}}-comment">{{commentlabel}}</label>
+    <textarea id="{{uid}}-comment" class="vm-report-comment" rows="2" maxlength="500"></textarea>
+    <div class="vm-report-error" role="alert" data-region="reporterror" hidden></div>
+    <div class="vm-report-actions">
+        <button type="button" class="vm-btn vm-btn-primary vm-btn-sm" data-action="reportsend">{{sendlabel}}</button>
+        <button type="button" class="vm-btn vm-btn-ghost vm-btn-sm" data-action="reportcancel">{{cancellabel}}</button>
+    </div>
+</form>

@@ -37,7 +37,8 @@ class provider implements
     \core_privacy\local\request\core_userlist_provider,
     \core_privacy\local\request\plugin\provider {
     /** User data tables. */
-    const TABLES = ['vocabmastery_response', 'vocabmastery_attempt', 'vocabmastery_itemstate', 'vocabmastery_topicstate'];
+    const TABLES = ['vocabmastery_response', 'vocabmastery_attempt', 'vocabmastery_itemstate', 'vocabmastery_topicstate',
+        'vocabmastery_flag'];
 
     /**
      * Metadata.
@@ -50,20 +51,30 @@ class provider implements
             'userid' => 'privacy:metadata:userid', 'mode' => 'privacy:metadata:attempt:mode',
             'total' => 'privacy:metadata:attempt:total', 'correct' => 'privacy:metadata:attempt:correct',
             'score' => 'privacy:metadata:attempt:score', 'timestart' => 'privacy:metadata:timestart',
+            'itemids' => 'privacy:metadata:attempt:itemids', 'beststreak' => 'privacy:metadata:attempt:beststreak',
+            'passed' => 'privacy:metadata:attempt:passed', 'timefinish' => 'privacy:metadata:attempt:timefinish',
         ], 'privacy:metadata:attempt');
         $collection->add_database_table('vocabmastery_response', [
             'userid' => 'privacy:metadata:userid', 'response' => 'privacy:metadata:response:response',
             'correct' => 'privacy:metadata:response:correct', 'responsetime' => 'privacy:metadata:response:responsetime',
-            'timecreated' => 'privacy:metadata:timecreated',
+            'hinted' => 'privacy:metadata:response:hinted', 'timecreated' => 'privacy:metadata:timecreated',
         ], 'privacy:metadata:response');
         $collection->add_database_table('vocabmastery_itemstate', [
             'userid' => 'privacy:metadata:userid', 'attempts' => 'privacy:metadata:itemstate:attempts',
             'mastered' => 'privacy:metadata:itemstate:mastered', 'difficult' => 'privacy:metadata:itemstate:difficult',
+            'correct' => 'privacy:metadata:itemstate:correct', 'wrong' => 'privacy:metadata:itemstate:wrong',
+            'streak' => 'privacy:metadata:itemstate:streak', 'lastseen' => 'privacy:metadata:itemstate:lastseen',
         ], 'privacy:metadata:itemstate');
         $collection->add_database_table('vocabmastery_topicstate', [
             'userid' => 'privacy:metadata:userid', 'mastery' => 'privacy:metadata:topicstate:mastery',
             'besttest' => 'privacy:metadata:topicstate:besttest', 'passed' => 'privacy:metadata:topicstate:passed',
+            'learned' => 'privacy:metadata:topicstate:learned', 'timepassed' => 'privacy:metadata:topicstate:timepassed',
         ], 'privacy:metadata:topicstate');
+        $collection->add_database_table('vocabmastery_flag', [
+            'userid' => 'privacy:metadata:userid', 'reason' => 'privacy:metadata:flag:reason',
+            'commenttext' => 'privacy:metadata:flag:commenttext', 'timecreated' => 'privacy:metadata:timecreated',
+            'resolved' => 'privacy:metadata:flag:resolved',
+        ], 'privacy:metadata:flag');
         return $collection;
     }
 
@@ -86,10 +97,18 @@ class provider implements
                   JOIN {course_modules} cm ON cm.id = ctx.instanceid AND ctx.contextlevel = :ctxlevel2
                   JOIN {modules} m ON m.id = cm.module AND m.name = :modname2
                   JOIN {vocabmastery_attempt} a ON a.vocabmasteryid = cm.instance
-                 WHERE a.userid = :userid2";
+                 WHERE a.userid = :userid2
+                 UNION
+                SELECT DISTINCT ctx.id
+                  FROM {context} ctx
+                  JOIN {course_modules} cm ON cm.id = ctx.instanceid AND ctx.contextlevel = :ctxlevel3
+                  JOIN {modules} m ON m.id = cm.module AND m.name = :modname3
+                  JOIN {vocabmastery_flag} f ON f.vocabmasteryid = cm.instance
+                 WHERE f.userid = :userid3";
         $contextlist = new contextlist();
         $contextlist->add_from_sql($sql, ['ctxlevel' => CONTEXT_MODULE, 'modname' => 'vocabmastery', 'userid' => $userid,
-            'ctxlevel2' => CONTEXT_MODULE, 'modname2' => 'vocabmastery', 'userid2' => $userid]);
+            'ctxlevel2' => CONTEXT_MODULE, 'modname2' => 'vocabmastery', 'userid2' => $userid,
+            'ctxlevel3' => CONTEXT_MODULE, 'modname3' => 'vocabmastery', 'userid3' => $userid]);
         return $contextlist;
     }
 
@@ -104,7 +123,7 @@ class provider implements
             return;
         }
         $params = ['cmid' => $context->instanceid, 'modname' => 'vocabmastery'];
-        foreach (['vocabmastery_attempt', 'vocabmastery_topicstate'] as $table) {
+        foreach (['vocabmastery_attempt', 'vocabmastery_topicstate', 'vocabmastery_flag'] as $table) {
             $sql = "SELECT t.userid
                       FROM {course_modules} cm
                       JOIN {modules} m ON m.id = cm.module AND m.name = :modname
@@ -180,6 +199,18 @@ class provider implements
                 ];
             }
             $rs->close();
+            $sql = "SELECT f.*, i.prompt
+                      FROM {vocabmastery_flag} f
+                      JOIN {vocabmastery_item} i ON i.id = f.itemid
+                     WHERE f.vocabmasteryid = :vid AND f.userid = :userid
+                  ORDER BY f.id";
+            $data->reports = [];
+            foreach ($DB->get_records_sql($sql, ['vid' => $vid, 'userid' => $userid]) as $f) {
+                $data->reports[] = [
+                    'item' => $f->prompt, 'reason' => $f->reason, 'comment' => (string)$f->commenttext,
+                    'resolved' => transform::yesno($f->resolved), 'time' => transform::datetime($f->timecreated),
+                ];
+            }
             writer::with_context($context)->export_data([], $data);
         }
     }

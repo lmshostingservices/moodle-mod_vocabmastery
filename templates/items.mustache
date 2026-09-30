@@ -23,15 +23,37 @@
     {
         "manageurl": "#", "info": "Fixed list: der / die / das · Counts towards topic mastery", "seturl": "#",
         "actionurl": "#", "sesskey": "abc", "count": "19 items (18 core)",
-        "bulk": [{"value": "", "label": "With selected..."}], "hastargets": true, "targets": [{"value": 2, "label": "A1 · L2 · Nouns"}],
+        "bulk": [{"value": "", "label": "With selected…"}], "hastargets": true, "targets": [{"value": 2, "label": "A1 · L2 · Nouns"}],
         "fields": [{"field": "prompt", "label": "Prompt (word)"}],
         "items": [{"id": 1, "search": "vater der father", "prompt": "Vater", "iscore": true,
             "cells": [{"name": "items[1][prompt]", "value": "Vater", "field": "prompt", "label": "Prompt (word)"}]}],
-        "newrows": [{"cells": [{"name": "new[0][prompt]", "value": "", "field": "prompt", "label": "Prompt (word)"}], "corename": "new[0][iscore]"}]
+        "newrows": [{"cells": [{"name": "new[0][prompt]", "value": "", "field": "prompt", "label": "Prompt (word)"}], "corename": "new[0][iscore]"}],
+        "hasreports": true, "reportstitle": "Reported by learners (1)",
+        "reports": [{"id": 3, "word": "Vater → der", "reason": "Spelling mistake", "comment": "", "by": "Reported by Anna on 28/09/26"}]
     }
 }}
 <div class="mb-2"><a href="{{manageurl}}">← {{#str}}managecontent, mod_vocabmastery{{/str}}</a></div>
 <div class="text-muted mb-3">{{info}} <a href="{{seturl}}">{{#str}}editsetsettings, mod_vocabmastery{{/str}}</a></div>
+{{#hasreports}}
+<div class="alert alert-warning" id="vm-reports">
+    <h4 class="h6">{{reportstitle}}</h4>
+    <p class="small mb-2">{{#str}}reports_intro, mod_vocabmastery{{/str}}</p>
+    <ul class="list-unstyled mb-0">
+        {{#reports}}
+        <li class="d-flex flex-wrap align-items-center gap-2 py-1 border-top">
+            <b>{{word}}</b> <span class="badge bg-light text-dark">{{reason}}</span>
+            {{#comment}}<span>"{{comment}}"</span>{{/comment}}
+            <span class="small text-muted">{{by}}</span>
+            <form method="post" action="{{actionurl}}" class="ms-auto">
+                <input type="hidden" name="sesskey" value="{{sesskey}}">
+                <input type="hidden" name="resolveflag" value="{{id}}">
+                <button type="submit" class="btn btn-sm btn-outline-success">{{#str}}reports_resolve, mod_vocabmastery{{/str}}</button>
+            </form>
+        </li>
+        {{/reports}}
+    </ul>
+</div>
+{{/hasreports}}
 <form method="post" action="{{actionurl}}" id="vm-items-form">
     <input type="hidden" name="sesskey" value="{{sesskey}}">
     <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
@@ -57,7 +79,7 @@
             </thead>
             <tbody>
                 {{#items}}
-                <tr data-search="{{search}}">
+                <tr data-search="{{search}}"{{#flagged}} class="table-warning"{{/flagged}}>
                     <td><input type="checkbox" class="vm-sel" name="sel[{{id}}]" value="1" aria-label="{{#str}}select{{/str}} {{prompt}}"></td>
                     {{#cells}}<td><input type="text" class="form-control form-control-sm vm-f-{{field}}" name="{{name}}" value="{{value}}" aria-label="{{label}}"></td>{{/cells}}
                     <td><input type="checkbox" name="items[{{id}}][iscore]" value="1" {{#iscore}}checked{{/iscore}} aria-label="{{#str}}field_iscore, mod_vocabmastery{{/str}}"></td>

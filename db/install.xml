@@ -222,5 +222,27 @@
         <INDEX NAME="vocabuser" UNIQUE="false" FIELDS="vocabmasteryid, userid"/>
       </INDEXES>
     </TABLE>
+    <TABLE NAME="vocabmastery_flag" COMMENT="Problems with a word reported by learners">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="vocabmasteryid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="itemid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="reason" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="other" SEQUENCE="false" COMMENT="wronganswer, typo, translation or other"/>
+        <FIELD NAME="commenttext" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Optional note from the learner"/>
+        <FIELD NAME="resolved" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="vocabmasteryid" TYPE="foreign" FIELDS="vocabmasteryid" REFTABLE="vocabmastery" REFFIELDS="id"/>
+        <KEY NAME="itemid" TYPE="foreign" FIELDS="itemid" REFTABLE="vocabmastery_item" REFFIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="vmresolved" UNIQUE="false" FIELDS="vocabmasteryid, resolved"/>
+      </INDEXES>
+    </TABLE>
   </TABLES>
 </XMLDB>

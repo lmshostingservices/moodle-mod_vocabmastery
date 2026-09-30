@@ -46,6 +46,7 @@ class import_word_form extends \moodleform {
             ['subdirs' => 0, 'maxfiles' => 100, 'accepted_types' => ['.docx']]
         );
         $m->addRule('docs', null, 'required', null, 'client');
+        $m->addHelpButton('docs', 'worddocuments', 'mod_vocabmastery');
         $this->add_action_buttons(true, get_string('analyse', 'mod_vocabmastery'));
     }
 }

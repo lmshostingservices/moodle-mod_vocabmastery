@@ -67,6 +67,18 @@ if ($ADMIN->fulltree) {
         get_string('lmslabs_local_desc', 'mod_vocabmastery'),
         ''
     ));
+    $settings->add(new admin_setting_heading(
+        'mod_vocabmastery/importheading',
+        get_string('importsettings', 'mod_vocabmastery'),
+        ''
+    ));
+    $settings->add(new admin_setting_configtextarea(
+        'mod_vocabmastery/importignorelines',
+        get_string('importignorelines', 'mod_vocabmastery'),
+        get_string('importignorelines_desc', 'mod_vocabmastery'),
+        '',
+        PARAM_TEXT
+    ));
 }
 
 $ADMIN->add('modvocabmasteryfolder', $settings);

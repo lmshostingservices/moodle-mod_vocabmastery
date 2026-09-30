@@ -24,9 +24,17 @@ namespace mod_vocabmastery\import;
  * @license    https://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class table_parser {
+    /** Most rows read from one file. */
+    const MAX_ROWS = 10000;
+    /** Most columns read from one file. */
+    const MAX_COLUMNS = 30;
+
     /** Fields a column can map to. */
     const FIELDS = ['ignore', 'correctvalue', 'prompt', 'translation', 'plural', 'altanswers', 'hint', 'explanation',
-        'iscore', 'level', 'topic', 'set', 'source'];
+        'iscore', 'level', 'topic', 'set', 'source', 'gated', 'answermode', 'instruction'];
+
+    /** Fields that describe the set rather than the word. */
+    const SET_FIELDS = ['gated', 'answermode', 'instruction'];
 
     /** Header synonyms (lower case) => field. */
     const HEADERS = [
@@ -45,6 +53,9 @@ class table_parser {
         'topic' => ['topic', 'lesson', 'lektion', 'thema', 'unit', 'kapitel'],
         'set' => ['set', 'category', 'kategorie', 'type', 'section'],
         'source' => ['source', 'quelle'],
+        'gated' => ['gated', 'counts for mastery', 'mastery check', 'wertung'],
+        'answermode' => ['answer mode', 'answermode', 'buttons mode', 'antwortmodus'],
+        'instruction' => ['instruction', 'anweisung', 'aufgabe', 'aufgabenstellung'],
     ];
 
     /**
@@ -108,9 +119,16 @@ class table_parser {
             require_once($CFG->libdir . '/excellib.class.php');
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($path);
             $reader->setReadDataOnly(true);
+            // Refuse sheets larger than an import can use before loading them into memory.
+            foreach ($reader->listWorksheetInfo($path) as $info) {
+                if ($info['totalRows'] > self::MAX_ROWS + 1 || $info['totalColumns'] > self::MAX_COLUMNS) {
+                    throw new \moodle_exception('importtoolarge', 'mod_vocabmastery');
+                }
+            }
             $book = $reader->load($path);
             $rows = [];
-            foreach ($book->getActiveSheet()->toArray(null, true, true, false) as $r) {
+            // Values as stored: formulas are not evaluated.
+            foreach ($book->getActiveSheet()->toArray(null, false, true, false) as $r) {
                 $r = array_map(fn($c) => trim((string)$c), $r);
                 if (array_filter($r, fn($c) => $c !== '')) {
                     $rows[] = $r;
@@ -316,6 +334,20 @@ class table_parser {
             if (isset($rec['iscore'])) {
                 $v = \core_text::strtolower($rec['iscore']);
                 $rec['iscore'] = in_array($v, ['0', 'no', 'nein', 'n', 'false', 'optional', 'opt'], true) ? 0 : 1;
+            }
+            if (isset($rec['gated']) && $rec['gated'] !== '') {
+                $v = \core_text::strtolower($rec['gated']);
+                $rec['gated'] = in_array($v, ['0', 'no', 'nein', 'n', 'false'], true) ? 0 : 1;
+            }
+            if (isset($rec['answermode'])) {
+                $v = \core_text::strtolower($rec['answermode']);
+                if (in_array($v, ['fixed', 'buttons', 'fest', 'feste'], true)) {
+                    $rec['answermode'] = 'fixed';
+                } else if (in_array($v, ['pool', 'random', 'mixed', 'zufall'], true)) {
+                    $rec['answermode'] = 'pool';
+                } else {
+                    unset($rec['answermode']);
+                }
             }
             if (isset($rec['plural']) && preg_match('/^[-–—]+$/u', $rec['plural'])) {
                 $rec['plural'] = '';

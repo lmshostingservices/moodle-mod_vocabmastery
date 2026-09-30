@@ -25,9 +25,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_vocabmastery';
-$plugin->version   = 2026092803;
+$plugin->version   = 2026093001;
 $plugin->requires  = 2024042200; // Moodle 4.4.
 $plugin->supported = [404, 502];
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '0.9.4';
-$plugin->release_prev = '0.9.3';
+$plugin->release   = '1.0.1';
+$plugin->release_prev = '1.0.0';

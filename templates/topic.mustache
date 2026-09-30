@@ -46,7 +46,7 @@
             <div class="vm-ring {{#passed}}vm-ring-done{{/passed}}" role="img" aria-label="{{#str}}mastery, mod_vocabmastery{{/str}}: {{mastery}}%">
                 <svg viewBox="0 0 36 36" aria-hidden="true" focusable="false">
                     <circle class="vm-ring-track" cx="18" cy="18" r="15.9155"/>
-                    <circle class="vm-ring-value" cx="18" cy="18" r="15.9155" stroke-dasharray="{{ringdash}} 100"/>
+                    {{#ringdash}}<circle class="vm-ring-value" cx="18" cy="18" r="15.9155" stroke-dasharray="{{ringdash}} 100"/>{{/ringdash}}
                 </svg>
                 <div class="vm-ring-label"><span class="vm-ring-num">{{mastery}}%</span><span class="vm-ring-cap">{{#str}}mastery, mod_vocabmastery{{/str}}</span></div>
             </div>
@@ -89,7 +89,7 @@
         <div class="vm-setpicker" role="radiogroup" aria-label="{{#str}}chooseset, mod_vocabmastery{{/str}}">
             {{#sets}}
             <button type="button" class="vm-setchip {{#selected}}vm-selected{{/selected}}" role="radio"
-                    aria-checked="{{#selected}}true{{/selected}}{{^selected}}false{{/selected}}"
+                    aria-checked="{{#selected}}true{{/selected}}{{^selected}}false{{/selected}}" tabindex="{{#selected}}0{{/selected}}{{^selected}}-1{{/selected}}"
                     data-action="vm-selectset" data-setid="{{id}}">
                 <span class="vm-setchip-name">{{name}}</span>
                 <span class="vm-setchip-meta">{{mastery}}% · {{itemcount}}{{#gated}} · {{#str}}gatedshort, mod_vocabmastery{{/str}}{{/gated}}</span>

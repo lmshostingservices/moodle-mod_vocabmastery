@@ -57,7 +57,7 @@
             <div class="vm-ring" role="img" aria-label="{{#str}}yourprogress, mod_vocabmastery{{/str}}: {{overall}}%">
                 <svg viewBox="0 0 36 36" aria-hidden="true" focusable="false">
                     <circle class="vm-ring-track" cx="18" cy="18" r="15.9155"/>
-                    <circle class="vm-ring-value" cx="18" cy="18" r="15.9155" stroke-dasharray="{{overall}} 100"/>
+                    {{#overall}}<circle class="vm-ring-value" cx="18" cy="18" r="15.9155" stroke-dasharray="{{overall}} 100"/>{{/overall}}
                 </svg>
                 <div class="vm-ring-label"><span class="vm-ring-num">{{overall}}%</span><span class="vm-ring-cap">{{#str}}yourprogress, mod_vocabmastery{{/str}}</span></div>
             </div>

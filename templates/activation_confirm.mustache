@@ -32,9 +32,6 @@
         {{#free}}{{#str}}act_confirm_free, mod_vocabmastery{{/str}}{{/free}}
         {{^free}}{{#str}}act_confirm_spend, mod_vocabmastery, {{credits}}{{/str}}{{/free}}
     </div>
-    {{#lowbalance}}
-    <div class="alert alert-warning">{{#str}}act_confirm_lowbalance, mod_vocabmastery{{/str}}</div>
-    {{/lowbalance}}
     <table class="table table-sm vm-activation-table">
         <tbody>
             <tr><th scope="row">{{#str}}act_price, mod_vocabmastery{{/str}}</th><td>{{#str}}act_pricecredits, mod_vocabmastery, {{credits}}{{/str}}</td></tr>

@@ -40,12 +40,19 @@ const STRING_KEYS = ['mode_learn', 'mode_practice', 'mode_blitz', 'mode_streak',
     'accuracy', 'beststreakn', 'personalbest', 'previousbestn', 'againbtn', 'practisenmistakes', 'backtotopic',
     'retrycheck', 'wherenext', 'route_horizontal', 'route_vertical', 'route_next', 'topicmasteredpct', 'masterynow',
     'yourmistakes', 'typeanswer', 'startpractice', 'loading', 'errorsaving', 'optionaltag', 'difficulttag', 'reviewedn',
-    'backtooverview', 'yougot'];
+    'backtooverview', 'yougot', 'res_excellent', 'res_great', 'res_solid', 'res_start', 'res_tip_excellent',
+    'res_tip_great', 'res_tip_solid', 'res_tip_start', 'res_passed', 'res_notyet', 'completedin', 'lasttime', 'bigjump',
+    'youranswers', 'strongin', 'workon', 'reviewanswers', 'youranswer', 'noanswer', 'nextstep', 'next_mistakes',
+    'next_mistakes_text', 'next_check', 'next_check_text', 'next_again', 'next_again_text', 'next_practice',
+    'next_practice_text', 'next_go', 'report', 'report_title', 'reason_wronganswer', 'reason_typo', 'reason_translation',
+    'reason_other', 'report_comment', 'report_send', 'report_thanks', 'report_failed', 'cancel', 'seenexttime',
+    'correctofn', 'streakof', 'blitzscore', 'sameaslast', 'next_mistakes_one', 'reviewedn_one', 'finishfailed', 'retry',
+    'key_space', 'key_enter'];
 
 const ICONS = ['learn', 'practice', 'blitz', 'streak', 'difficult', 'test', 'check', 'close', 'hint', 'award', 'trophy',
     'right', 'down'];
 
-const TEMPLATES = ['shell', 'question', 'feedback', 'flashcard', 'stats', 'summary', 'message']
+const TEMPLATES = ['shell', 'question', 'feedback', 'flashcard', 'stats', 'summary', 'message', 'report']
     .map((t) => `${COMPONENT}/trainer_${t}`);
 
 let cfg = null;
@@ -55,6 +62,7 @@ let live = null;
 let session = null;
 let strings = {};
 let keysBound = false;
+let starting = false;
 
 const icons = {};
 ICONS.forEach((name) => {
@@ -76,8 +84,18 @@ const str = (key, a) => {
     if (typeof a === 'object') {
         return s.replace(/\{\$a->(\w+)\}/g, (m, k) => (a[k] !== undefined ? a[k] : m));
     }
-    return s.replace(/\{\$a\}/g, a);
+    // A function replacement, so "$&" and similar in user text are not interpreted.
+    return s.replace(/\{\$a\}/g, () => a);
 };
+
+/**
+ * Pick the singular string variant (key_one) for a count of 1.
+ *
+ * @param {string} key
+ * @param {number} n
+ * @returns {string}
+ */
+const strn = (key, n) => (Number(n) === 1 && strings[`${key}_one`] ? str(`${key}_one`, n) : str(key, n));
 
 const loadStrings = () => getStrings(STRING_KEYS.map((key) => ({key: `js_${key}`, component: COMPONENT})))
     .then((values) => {
@@ -90,6 +108,21 @@ const loadStrings = () => getStrings(STRING_KEYS.map((key) => ({key: `js_${key}`
 const normalise = (v) => String(v || '').replace(/\s+/g, ' ').trim().toLowerCase();
 
 const randInt = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
+
+const formatTime = (sec) => {
+    const m = Math.floor(sec / 60);
+    const r = sec % 60;
+    return `${m}:${r < 10 ? '0' : ''}${r}`;
+};
+
+/**
+ * Whether a key event target is a control that handles Enter/Space itself.
+ *
+ * @param {EventTarget} el
+ * @returns {boolean}
+ */
+const isControl = (el) => !!(el && el.closest
+    && el.closest('button, a[href], input, textarea, select, summary, [contenteditable]'));
 
 const reducedMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -117,13 +150,25 @@ const isCorrect = (q, value) => {
 };
 
 /**
- * Full answer: "der Vater" for fixed buttons, "sich einleben → in + Akk." otherwise.
+ * Whether an answer is written before the word (a short one-word answer from fixed buttons, e.g. an article).
+ *
+ * @param {boolean|number} fixed
+ * @param {string} value
+ * @returns {boolean}
+ */
+const isPrefix = (fixed, value) => {
+    const v = String(value || '').trim();
+    return !!fixed && v !== '' && !/\s/.test(v) && v.length <= 4;
+};
+
+/**
+ * Full answer: "der Vater" for article-style answers, "sich einleben → in + Akk." otherwise.
  *
  * @param {Object} q
  * @param {string} value
  * @returns {string}
  */
-const fullAnswer = (q, value) => (q.fixedorder ? `${value} ${q.prompt}` : `${q.prompt} → ${value}`);
+const fullAnswer = (q, value) => (isPrefix(q.fixedorder, value) ? `${value} ${q.prompt}` : `${q.prompt} → ${value}`);
 
 const call = (methodname, args) => {
     args.cmid = cfg.cmid;
@@ -158,12 +203,28 @@ const showMessage = (message, loading) => render(stage, 'message', {
 
 // Shell, progress and stats.
 
-const shell = () => render(stage, 'shell', {mode: session.mode, modetitle: modeTitle(session.mode), exitlabel: str('exit')})
-    .then(() => {
-        session.ui = {count: region('count'), bar: region('bar'), card: region('card'), stats: region('stats')};
+const shell = () => {
+    const s = session;
+    return render(stage, 'shell', {mode: s.mode, modetitle: modeTitle(s.mode), exitlabel: str('exit')}).then(() => {
+        s.ui = {count: region('count'), bar: region('bar'), card: region('card'), stats: region('stats'),
+            clock: region('clock')};
+        s.started = Date.now();
+        if (s.mode !== 'blitz') {
+            // The interval belongs to this session only.
+            const tick = () => {
+                if (session !== s) {
+                    stopTimer(s);
+                    return;
+                }
+                s.ui.clock.textContent = formatTime(Math.floor((Date.now() - s.started) / 1000));
+            };
+            tick();
+            s.clock = window.setInterval(tick, 1000);
+        }
         window.scrollTo({top: app.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth'});
         return null;
     });
+};
 
 const setProgress = (done, total, label) => {
     const ui = session.ui;
@@ -190,30 +251,86 @@ const record = (q, value, hinted) => {
         responsetime: Math.max(0, Date.now() - (s.qstart || Date.now())),
         hinted: !!hinted,
     };
+    s.responses++;
     s.pending = s.pending.then(() => call('record_response', args)).catch(() => {
         s.failed++;
     });
     return s.pending;
 };
 
-const stopTimer = () => {
-    if (session && session.timer) {
-        window.clearInterval(session.timer);
-        session.timer = null;
+/**
+ * Stop the timers of a session.
+ *
+ * @param {Object} s session, defaults to the current one
+ */
+const stopTimer = (s = session) => {
+    if (s && s.timer) {
+        window.clearInterval(s.timer);
+        s.timer = null;
+    }
+    if (s && s.clock) {
+        window.clearInterval(s.clock);
+        s.clock = null;
     }
 };
 
+/**
+ * Close the attempt on the server. Every path (summary, exit) shares one promise; a failure can be retried.
+ *
+ * @returns {Promise}
+ */
 const finish = () => {
     const s = session;
     if (!s.finishing) {
         s.done = true;
-        stopTimer();
-        s.finishing = s.pending.then(() => call('finish_session', {attemptid: s.attemptid, beststreak: s.bestStreak}));
+        stopTimer(s);
+        s.finishing = s.pending.then(() => call('finish_session', {attemptid: s.attemptid, beststreak: s.bestStreak}))
+            .catch((e) => {
+                s.finishing = null;
+                throw e;
+            });
     }
     return s.finishing;
 };
 
-const finishAndSummarise = () => finish().then(showSummary).catch(Notification.exception);
+/**
+ * Saving the results failed: offer to retry or to leave.
+ *
+ * @param {Object} s session
+ * @returns {Promise}
+ */
+const showFinishError = (s) => {
+    s.ui.card.className = 'vm-tr-card';
+    return render(s.ui.card, 'message', {
+        message: str('finishfailed'),
+        loading: false,
+        retrylabel: str('retry'),
+        backurl: s.topicid && cfg.topicurl ? cfg.topicurl : cfg.homeurl,
+        backlabel: s.topicid ? str('backtotopic') : str('backtooverview'),
+    }).then(() => {
+        const retry = s.ui.card.querySelector('[data-action="finishretry"]');
+        if (retry) {
+            retry.focus();
+        }
+        return null;
+    });
+};
+
+const finishAndSummarise = () => {
+    const s = session;
+    return finish()
+        .then((r) => {
+            if (session !== s || s.exiting) {
+                return null;
+            }
+            return showSummary(r).catch(Notification.exception);
+        })
+        .catch(() => {
+            if (session === s && !s.exiting) {
+                showFinishError(s).catch(Notification.exception);
+            }
+        });
+};
 
 // Question card.
 
@@ -230,6 +347,7 @@ const renderQuestion = (q, secure) => {
     s.answered = false;
     s.hinted = false;
     s.continueFn = null;
+    s.advanceTimer = null;
     const choice = q.itemtype !== 'typed' && q.options.length > 0;
     const injected = !!q.injected;
     const optional = !secure && !q.iscore;
@@ -257,11 +375,34 @@ const renderQuestion = (q, secure) => {
         s.ui.input = region('input', s.ui.card);
         s.ui.feedback = region('feedback', s.ui.card);
         s.ui.actions = region('actions', s.ui.card);
+        s.ui.prompt = region('prompt', s.ui.card);
         if (s.ui.input) {
             s.ui.input.focus();
+        } else if (focusLost()) {
+            // The answered card was replaced: keep the learner's place on the new question.
+            s.ui.prompt.focus({preventScroll: true});
         }
         return null;
     });
+};
+
+/**
+ * Whether keyboard focus has dropped to the page body (e.g. a focused button was disabled or removed).
+ *
+ * @returns {boolean}
+ */
+const focusLost = () => !document.activeElement || document.activeElement === document.body
+    || !document.activeElement.isConnected || document.activeElement.disabled;
+
+/**
+ * After answering, the answer controls are disabled: move focus to the prompt so it is not lost.
+ *
+ * @param {Object} s session
+ */
+const keepFocus = (s) => {
+    if (s.ui.prompt && (focusLost() || s.ui.buttons.includes(document.activeElement) || document.activeElement === s.ui.input)) {
+        s.ui.prompt.focus({preventScroll: true});
+    }
 };
 
 /**
@@ -286,6 +427,7 @@ const markButtons = (q, chosen, correct) => {
         s.ui.input.disabled = true;
         s.ui.input.classList.add(correct ? 'vm-correct' : 'vm-wrong');
     }
+    keepFocus(s);
 };
 
 const showFeedback = (q, chosen, correct, extra) => {
@@ -302,6 +444,8 @@ const showFeedback = (q, chosen, correct, extra) => {
         correctlabel: str('correctanswer'),
         explanation: correct ? '' : (q.explanation || q.note),
         extra,
+        itemid: q.itemid,
+        reportlabel: str('report'),
     });
 };
 
@@ -312,7 +456,13 @@ const showContinue = (fn) => {
     btn.type = 'button';
     btn.className = 'vm-btn vm-btn-primary vm-continue-btn';
     btn.dataset.action = 'continue';
+    btn.setAttribute('aria-keyshortcuts', 'Enter');
     btn.textContent = str('continue');
+    const kbd = document.createElement('kbd');
+    kbd.className = 'vm-kbd';
+    kbd.setAttribute('aria-hidden', 'true');
+    kbd.textContent = str('key_enter');
+    btn.appendChild(kbd);
     s.ui.actions.appendChild(btn);
     s.continueFn = fn;
     btn.focus();
@@ -363,9 +513,14 @@ const answerPractice = (q, value) => {
         s.wrong++;
         s.streak = 0;
         s.mistakes[q.itemid] = q;
-        // The word comes back a few cards later and must be answered correctly before the end.
-        s.queue.splice(Math.min(s.queue.length, randInt(3, 5)), 0, Object.assign({}, q, {retry: true}));
-        extra = str('appearsagain');
+        // The word comes back a few cards later (at most twice per session, so a session always ends).
+        s.retries[q.itemid] = (s.retries[q.itemid] || 0) + 1;
+        if (s.retries[q.itemid] <= 2) {
+            s.queue.splice(Math.min(s.queue.length, randInt(3, 5)), 0, Object.assign({}, q, {retry: true}));
+            extra = str('appearsagain');
+        } else {
+            extra = str('seenexttime');
+        }
     }
     // Mix in a previously difficult word every 5-8 answers.
     if (s.inject.length && s.count >= s.nextInject) {
@@ -375,8 +530,15 @@ const answerPractice = (q, value) => {
     setProgress(Object.keys(s.cleared).length, s.total);
     practiceStats();
     showFeedback(q, value, correct, extra).then(() => {
+        if (session !== s || s.done) {
+            return null;
+        }
         if (correct) {
-            s.advanceTimer = window.setTimeout(nextPractice, reducedMotion() ? 900 : 650);
+            s.advanceTimer = window.setTimeout(() => {
+                if (session === s) {
+                    nextPractice();
+                }
+            }, reducedMotion() ? 900 : 650);
             s.continueFn = () => {
                 window.clearTimeout(s.advanceTimer);
                 nextPractice();
@@ -392,6 +554,7 @@ const runPractice = () => {
     const s = session;
     s.total = new Set(s.queue.map((q) => q.itemid)).size;
     s.cleared = {};
+    s.retries = {};
     s.nextInject = randInt(5, 8);
     s.onAnswer = answerPractice;
     return shell().then(nextPractice);
@@ -423,6 +586,7 @@ const nextCard = () => {
         reveallabel: str('reveal'),
         knowlabel: str('iknowthis'),
         morelabel: str('needpractice'),
+        spacekey: str('key_space'),
     }).then(() => {
         s.ui.card.querySelector('[data-action="reveal"]').focus();
         return null;
@@ -431,7 +595,7 @@ const nextCard = () => {
 
 const revealCard = () => {
     const s = session;
-    if (s.revealed) {
+    if (s.revealed || s.done) {
         return;
     }
     s.revealed = true;
@@ -446,7 +610,7 @@ const revealCard = () => {
 
 const rateCard = (ok) => {
     const s = session;
-    if (!s.revealed) {
+    if (!s.revealed || s.done) {
         return;
     }
     const q = s.current;
@@ -467,11 +631,6 @@ const runLearn = () => {
 
 // Blitz and streak.
 
-const formatTime = (sec) => {
-    const m = Math.floor(sec / 60);
-    const r = sec % 60;
-    return `${m}:${r < 10 ? '0' : ''}${r}`;
-};
 
 const nextTimed = () => {
     const s = session;
@@ -506,18 +665,30 @@ const answerTimed = (q, value) => {
         if (s.mode === 'streak') {
             setProgress(0, 1, `${str('blitzstreak')} ${s.streak}`);
         }
-        window.setTimeout(nextTimed, 180);
+        window.setTimeout(() => {
+            if (session === s) {
+                nextTimed();
+            }
+        }, 180);
         return;
     }
     s.wrong++;
     s.streak = 0;
     s.mistakes[q.itemid] = q;
     showFeedback(q, value, false, '').catch(Notification.exception);
-    if (s.mode === 'streak') {
-        window.setTimeout(finishAndSummarise, 1400);
-    } else {
-        window.setTimeout(nextTimed, 1000);
-    }
+    const moveOn = () => {
+        if (session !== s || s.exiting) {
+            return;
+        }
+        if (s.mode === 'streak') {
+            finishAndSummarise();
+        } else {
+            nextTimed();
+        }
+    };
+    // Stored so that opening the report form can hold the card (see openReport).
+    s.continueFn = moveOn;
+    s.advanceTimer = window.setTimeout(moveOn, s.mode === 'streak' ? 1400 : 1000);
 };
 
 const runTimed = () => {
@@ -530,10 +701,14 @@ const runTimed = () => {
             s.endAt = Date.now() + cfg.blitzduration * 1000;
             setProgress(0, cfg.blitzduration, formatTime(cfg.blitzduration));
             s.timer = window.setInterval(() => {
+                if (session !== s) {
+                    stopTimer(s);
+                    return;
+                }
                 const left = Math.max(0, Math.ceil((s.endAt - Date.now()) / 1000));
                 setProgress(cfg.blitzduration - left, cfg.blitzduration, formatTime(left));
                 if (left <= 0) {
-                    stopTimer();
+                    stopTimer(s);
                     if (!s.done) {
                         finishAndSummarise();
                     }
@@ -572,8 +747,13 @@ const answerTest = (q, value) => {
             b.classList.add('vm-chosen');
         }
     });
+    keepFocus(s);
     s.index++;
-    window.setTimeout(nextTest, 250);
+    window.setTimeout(() => {
+        if (session === s && !s.exiting) {
+            nextTest();
+        }
+    }, 250);
 };
 
 const runTest = () => {
@@ -585,80 +765,173 @@ const runTest = () => {
 
 // Summary.
 
+/**
+ * Headline and tip for a score band.
+ *
+ * @param {number} pct
+ * @returns {Object} {band, headline, tip}
+ */
+const band = (pct) => {
+    if (pct >= 90) {
+        return {band: 'vm-band-top', key: 'excellent'};
+    }
+    if (pct >= 75) {
+        return {band: 'vm-band-good', key: 'great'};
+    }
+    if (pct >= 50) {
+        return {band: 'vm-band-mid', key: 'solid'};
+    }
+    return {band: 'vm-band-low', key: 'start'};
+};
+
+const RING = 2 * Math.PI * 52;
+
 const showSummary = (r) => {
     const s = session;
-    stopTimer();
+    stopTimer(s);
     s.ui.count.textContent = '';
+    if (s.ui.clock) {
+        s.ui.clock.textContent = '';
+    }
     s.ui.bar.style.width = '100%';
     setStats([]);
     s.ui.card.className = 'vm-tr-card vm-summary';
-    let title;
-    let big;
-    let icon = 'practice';
-    const lines = [];
+    const answers = r.answers || [];
+    const mistakes = r.mode === 'learn' ? [] : r.mistakes;
+    const pct = Math.round(r.score);
+    const b = band(pct);
+    let headline = str(`res_${b.key}`);
+    let tip = str(`res_tip_${b.key}`);
+    let hasring = true;
+    let ringsub = str('correctofn', {correct: r.mode === 'test' ? r.correct : answers.filter((x) => x.iscorrect).length,
+        total: r.mode === 'test' ? r.questioncount : answers.length});
+    let big = '';
+    let bigsub = '';
     if (r.mode === 'test') {
-        title = r.passed ? str('testpassed') : str('testnotyet');
-        icon = r.passed ? 'award' : 'test';
-        big = `${Math.round(r.score)}%`;
-        lines.push(str('yougot', {correct: r.correct, total: r.questioncount}));
+        headline = r.passed ? str('res_passed') : str('res_notyet');
+        tip = r.passed ? str('res_tip_excellent') : str('res_tip_start');
     } else if (r.mode === 'blitz') {
-        title = str('blitzdone');
-        icon = 'blitz';
+        hasring = false;
         big = String(r.correct);
-        lines.push(`${str('answeredcorrect', {correct: r.correct, total: r.total})} · ${str('accuracy')} ${Math.round(r.score)}%`);
-        lines.push(str('beststreakn', r.beststreak));
+        bigsub = str('blitzscore', {correct: r.correct, pct});
+        headline = str('blitzdone');
+        tip = '';
     } else if (r.mode === 'streak') {
-        title = str('streakdone');
-        icon = 'streak';
+        hasring = false;
         big = String(r.beststreak);
+        bigsub = str('streakof');
+        headline = str('streakdone');
+        tip = '';
     } else if (r.mode === 'learn') {
-        title = str('learndone');
-        icon = 'learn';
+        hasring = false;
         big = String(r.total);
-        lines.push(str('reviewedn', r.total));
-    } else {
-        title = str('sessiondone');
-        big = `${Math.round(r.score)}%`;
-        lines.push(str('answeredcorrect', {correct: r.correct, total: r.total}));
-        if (s.bestStreak >= 3) {
-            lines.push(str('beststreakn', s.bestStreak));
+        bigsub = strn('reviewedn', r.total);
+        headline = str('learndone');
+        tip = '';
+    }
+    const ringpct = pct;
+
+    const meta = [];
+    if (r.seconds > 0) {
+        meta.push({text: str('completedin', formatTime(r.seconds)), cls: ''});
+    }
+    if (r.personalbest) {
+        meta.push({text: str('personalbest'), cls: 'vm-meta-best'});
+    } else if (r.previousbest && (r.mode === 'blitz' || r.mode === 'streak')) {
+        meta.push({text: str('previousbestn', r.previousbest), cls: ''});
+    }
+    if (s.bestStreak >= 3 && r.mode !== 'streak' && r.mode !== 'test') {
+        meta.push({text: str('beststreakn', s.bestStreak), cls: ''});
+    }
+    let improve = null;
+    if (r.previousscore >= 0 && ['practice', 'difficult', 'test'].includes(r.mode)) {
+        const prev = Math.round(r.previousscore);
+        const delta = pct - prev;
+        improve = {
+            text: delta === 0 ? str('sameaslast', pct)
+                : str('lasttime', {prev, now: pct, delta: delta > 0 ? `+${delta}` : String(delta)}),
+            bigjump: delta >= 20 ? str('bigjump') : '',
+            cls: delta > 0 ? 'vm-meta-improve' : '',
+        };
+    }
+
+    // Insights per set, when the session covered more than one set.
+    const sets = (r.sets || []).filter((x) => x.total > 0).map((x) => ({name: x.name,
+        pct: Math.round(x.correct / x.total * 100)}));
+    const strong = sets.filter((x) => x.pct >= 90);
+    const work = sets.filter((x) => x.pct < 75).sort((x, y) => x.pct - y.pct);
+
+    // Recommended next step.
+    let next = null;
+    const showroutes = r.routes && r.routes.length && (r.mode !== 'test' || r.passed);
+    if (!showroutes) {
+        if (mistakes.length && r.mode !== 'streak') {
+            next = {title: strn('next_mistakes', mistakes.length), text: str('next_mistakes_text'), action: 'mistakes'};
+        } else if (r.mode === 'learn') {
+            next = {title: str('next_practice'), text: str('next_practice_text'), action: 'startpractice'};
+        } else if (s.topicid && r.mode !== 'test' && r.mastery >= 0 && r.mastery >= Math.min(80, r.threshold)) {
+            next = {title: str('next_check'), text: str('next_check_text', r.threshold), action: 'startcheck'};
+        } else if (r.mode !== 'test') {
+            next = {title: str('next_again'), text: str('next_again_text'), action: 'again'};
         }
     }
-    if (!r.personalbest && r.previousbest && (r.mode === 'blitz' || r.mode === 'streak')) {
-        lines.push(str('previousbestn', r.previousbest));
-    }
-    const showroutes = r.routes && r.routes.length && (r.mode !== 'test' || r.passed);
-    const mistakes = r.mode === 'learn' ? [] : r.mistakes;
     const actions = [];
-    if (mistakes.length && r.mode !== 'streak') {
-        actions.push({action: 'mistakes', label: str('practisenmistakes', mistakes.length), cls: 'vm-btn-warn'});
-    }
     if (r.mode === 'test' && !r.passed) {
-        actions.push({action: 'retry', label: str('retrycheck'), cls: 'vm-btn-primary'});
-    } else if (r.mode === 'learn') {
-        actions.push({action: 'startpractice', label: str('startpractice'), cls: 'vm-btn-primary'});
-    } else if (r.mode !== 'test') {
-        actions.push({action: 'again', label: str('againbtn'), cls: 'vm-btn-primary'});
+        actions.push({action: 'retry', label: str('retrycheck'), cls: 'vm-btn-ghost'});
+    } else if (r.mode !== 'test' && r.mode !== 'learn' && (!next || next.action !== 'again')) {
+        actions.push({action: 'again', label: str('againbtn'), cls: 'vm-btn-ghost'});
     }
     actions.push({action: 'back', label: s.topicid ? str('backtotopic') : str('backtooverview'), cls: 'vm-btn-ghost'});
+
+    const review = answers.map((x) => ({
+        itemid: x.itemid,
+        ok: x.iscorrect,
+        full: x.prefix ? `${x.correct} ${x.prompt}` : `${x.prompt} → ${x.correct}`,
+        given: x.iscorrect ? '' : (x.given ? str('youranswer', x.given) : str('noanswer')),
+        translation: x.translation,
+        reportlabel: str('report'),
+    }));
+    // Mistakes first, then the rest in the order asked.
+    review.sort((x, y) => Number(x.ok) - Number(y.ok));
+
     s.mistakeIds = mistakes.map((m) => m.itemid);
     s.summary = true;
-    announce(`${title} ${big}`);
+    announce(`${headline} ${hasring ? `${ringpct}%` : big}`);
     return render(s.ui.card, 'summary', {
-        icon: icons[icon],
-        iconclass: `vm-summary-icon-${icon}${r.mode === 'test' && !r.passed ? ' vm-summary-icon-muted' : ''}`,
-        title,
+        modelabel: modeTitle(r.mode),
+        headline,
+        tip,
+        hasring,
+        ringpct,
+        ringdash: `${(RING * Math.max(0, Math.min(100, ringpct)) / 100).toFixed(1)} ${RING.toFixed(1)}`,
+        ringband: hasring ? b.band : 'vm-band-neutral',
+        ringlabel: `${ringpct}%`,
+        ringsub,
         big,
-        bigclass: r.mode === 'test' ? (r.passed ? 'vm-good' : 'vm-bad') : '',
-        lines: lines.map((text) => ({text})),
-        best: r.personalbest,
-        bestlabel: str('personalbest'),
-        showmastery: r.mastery >= 0 && s.topicid > 0,
-        masterylabel: str('masterynow'),
-        mastery: Math.round(r.mastery),
+        bigsub,
+        meta,
+        improve,
         newlypassed: r.newlypassed ? str('topicmasteredpct', Math.round(r.mode === 'test' ? r.score : r.mastery)) : '',
+        hasgrid: answers.length > 0 && answers.length <= 120,
+        gridlabel: str('youranswers'),
+        correctlabel: str('blitzcorrect'),
+        wronglabel: str('blitzwrong'),
+        grid: answers.map((x, i) => ({n: i + 1, ok: x.iscorrect,
+            title: x.prefix ? `${x.correct} ${x.prompt}` : `${x.prompt} → ${x.correct}`})),
+        hasinsights: sets.length > 1 && (strong.length > 0 || work.length > 0),
+        hasstrong: strong.length > 0,
+        haswork: work.length > 0,
+        stronglabel: str('strongin'),
+        worklabel: str('workon'),
+        strong,
+        work,
+        hasnext: !!next,
+        nextlabel: str('nextstep'),
+        nexttitle: next ? next.title : '',
+        nexttext: next ? next.text : '',
+        nextaction: next ? next.action : '',
+        nextbutton: str('next_go'),
         hasroutes: !!showroutes,
-        wherenextlabel: str('wherenext'),
         routes: showroutes ? r.routes.map((route) => ({
             url: route.url,
             type: route.type,
@@ -666,22 +939,95 @@ const showSummary = (r) => {
             label: str(`route_${route.type}`),
             name: `${route.level} · ${route.name}`,
         })) : [],
-        hasmistakes: mistakes.length > 0,
-        mistakeslabel: str('yourmistakes'),
-        mistakes: mistakes.map((m) => ({
-            full: fullAnswer({fixedorder: (s.byId[m.itemid] || {fixedorder: s.fixedorder}).fixedorder, prompt: m.prompt},
-                m.correct),
-            translation: m.translation,
-        })),
+        hasreview: review.length > 0,
+        reviewlabel: str('reviewanswers', review.length),
+        review,
         actions,
         failedsave: s.failed ? str('errorsaving') : '',
     }).then(() => {
-        const first = s.ui.card.querySelector('.vm-summary-actions button');
+        const first = s.ui.card.querySelector('.vm-res-next-btn, .vm-route, .vm-summary-actions button');
         if (first) {
             first.focus();
         }
         return null;
     });
+};
+
+// Reporting a problem with a word.
+
+const openReport = (btn) => {
+    const s = session;
+    if (s && !s.summary && s.advanceTimer) {
+        // Keep the card on screen while the learner writes.
+        window.clearTimeout(s.advanceTimer);
+        s.advanceTimer = null;
+        if (s.continueFn) {
+            showContinue(s.continueFn);
+        }
+    }
+    const slot = btn.closest('.vm-report-slot');
+    const itemid = parseInt(btn.dataset.itemid, 10);
+    const reasons = ['wronganswer', 'typo', 'translation', 'other'].map((value, i) => ({value,
+        label: str(`reason_${value}`), checked: i === 0}));
+    return render(slot, 'report', {itemid, uid: `vmr${itemid}${Date.now()}`, title: str('report_title'), reasons,
+        commentlabel: str('report_comment'), sendlabel: str('report_send'), cancellabel: str('cancel')})
+        .then(() => {
+            const form = slot.querySelector('form');
+            form.addEventListener('submit', (e) => e.preventDefault());
+            const first = form.querySelector('input');
+            if (first) {
+                first.focus();
+            }
+            return null;
+        });
+};
+
+const closeReport = (form, message) => {
+    const slot = form.closest('.vm-report-slot');
+    const itemid = form.dataset.itemid;
+    slot.textContent = '';
+    if (message) {
+        const done = document.createElement('span');
+        done.className = 'vm-report-done';
+        done.tabIndex = -1;
+        done.textContent = message;
+        slot.appendChild(done);
+        // Focus (rather than a live announcement) reads the message and keeps the learner's place.
+        done.focus();
+        return;
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'vm-linkbtn';
+    btn.dataset.action = 'report';
+    btn.dataset.itemid = itemid;
+    btn.textContent = str('report');
+    slot.appendChild(btn);
+    btn.focus();
+};
+
+const sendReport = (btn) => {
+    const form = btn.closest('form');
+    const checked = form.querySelector('input[type="radio"]:checked');
+    // Plain text only: the web service rejects markup.
+    const comment = form.querySelector('textarea').value.replace(/<[^>]*>/g, '').replace(/[<>]/g, '').slice(0, 500);
+    const error = form.querySelector('[data-region="reporterror"]');
+    if (error) {
+        error.hidden = true;
+    }
+    btn.disabled = true;
+    return call('report_item', {itemid: parseInt(form.dataset.itemid, 10), reason: checked ? checked.value : 'other',
+        comment})
+        .then(() => closeReport(form, str('report_thanks')))
+        .catch(() => {
+            // Keep the form and the comment so the learner can try again.
+            btn.disabled = false;
+            if (error) {
+                error.textContent = str('report_failed');
+                error.hidden = false;
+            }
+            btn.focus();
+        });
 };
 
 // Lifecycle.
@@ -692,15 +1038,14 @@ const goBack = () => {
 
 const exitSession = () => {
     const s = session;
-    if (!s || s.summary || s.done || (s.count + s.correct + s.wrong) === 0) {
+    if (!s || s.summary || (!s.finishing && !s.responses)) {
+        stopTimer(s);
         goBack();
         return;
     }
-    stopTimer();
-    s.done = true;
-    s.pending.then(() => call('finish_session', {attemptid: s.attemptid, beststreak: s.bestStreak}))
-        .then(goBack)
-        .catch(goBack);
+    // Close the attempt whenever anything was answered, sharing the single finish() request.
+    s.exiting = true;
+    finish().then(goBack).catch(goBack);
 };
 
 /**
@@ -713,6 +1058,11 @@ const exitSession = () => {
  * @returns {Promise}
  */
 const start = (mode, topicid, setid, itemids) => {
+    if (starting) {
+        // A double click must not start two sessions.
+        return Promise.resolve();
+    }
+    starting = true;
     stopTimer();
     session = null;
     showMessage(str('loading'), true);
@@ -729,6 +1079,7 @@ const start = (mode, topicid, setid, itemids) => {
                 byId: {},
                 pending: Promise.resolve(),
                 failed: 0,
+                responses: 0,
                 count: 0,
                 correct: 0,
                 wrong: 0,
@@ -752,7 +1103,12 @@ const start = (mode, topicid, setid, itemids) => {
             }
             return runPractice();
         })
-        .catch((e) => showMessage((e && e.message) ? e.message : String(e), false));
+        .catch((e) => showMessage((e && e.message) ? e.message : String(e), false))
+        .catch(Notification.exception)
+        .then(() => {
+            starting = false;
+            return null;
+        });
 };
 
 const onStageAction = (action, target) => {
@@ -774,8 +1130,14 @@ const onStageAction = (action, target) => {
                 s.hinted = true;
                 const hint = document.createElement('div');
                 hint.className = 'vm-tr-hint';
+                hint.tabIndex = -1;
                 hint.textContent = s.current.hint;
                 target.replaceWith(hint);
+                if (s.ui.input && !s.ui.input.disabled) {
+                    s.ui.input.focus();
+                } else {
+                    hint.focus();
+                }
             }
             break;
         case 'continue':
@@ -798,7 +1160,24 @@ const onStageAction = (action, target) => {
             start('difficult', s.topicid, 0, s.mistakeIds);
             break;
         case 'retry':
+        case 'startcheck':
             start('test', s.topicid, 0, []);
+            break;
+        case 'report':
+            openReport(target).catch(Notification.exception);
+            break;
+        case 'reportsend':
+            sendReport(target);
+            break;
+        case 'reportcancel':
+            closeReport(target.closest('form'), '');
+            break;
+        case 'finishretry':
+            if (s) {
+                render(s.ui.card, 'message', {message: str('loading'), loading: true})
+                    .then(finishAndSummarise)
+                    .catch(Notification.exception);
+            }
             break;
         case 'startpractice':
             start('practice', s.topicid, s.setid, []);
@@ -819,7 +1198,23 @@ const onKey = (e) => {
     if (!s || !s.ui || e.ctrlKey || e.metaKey || e.altKey) {
         return;
     }
-    const inInput = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+    const target = e.target;
+    // Only react to keys pressed inside the trainer (or with nothing focused), never in the theme's own controls.
+    if (target && target !== document.body && target !== document.documentElement && !app.contains(target)) {
+        return;
+    }
+    const report = target && target.closest && target.closest('.vm-report');
+    if (report) {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeReport(report, '');
+        }
+        return;
+    }
+    if (s.summary) {
+        return;
+    }
+    const inInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
     if (e.key === 'Escape') {
         exitSession();
         return;
@@ -835,13 +1230,17 @@ const onKey = (e) => {
         }
         return;
     }
-    if (s.summary) {
-        return;
-    }
     if (s.mode === 'learn') {
+        // A focused button activates itself with Space and Enter; links and form controls keep all their keys.
+        const onButton = !!(target && target.closest && target.closest('button'));
+        if (isControl(target) && !onButton) {
+            return;
+        }
         if (e.key === ' ' || e.key === 'Spacebar') {
-            e.preventDefault();
-            revealCard();
+            if (!onButton) {
+                e.preventDefault();
+                revealCard();
+            }
         } else if (e.key === '1' || e.key === 'ArrowRight') {
             rateCard(true);
         } else if (e.key === '2' || e.key === 'ArrowLeft') {
@@ -849,7 +1248,7 @@ const onKey = (e) => {
         }
         return;
     }
-    if (e.key === 'Enter' && s.answered && s.continueFn) {
+    if (e.key === 'Enter' && s.answered && s.continueFn && !isControl(target)) {
         e.preventDefault();
         onStageAction('continue');
         return;
@@ -860,6 +1259,48 @@ const onKey = (e) => {
             e.preventDefault();
             b.click();
         }
+    }
+};
+
+/**
+ * Select a set chip (radio) and make it the single tab stop of the group.
+ *
+ * @param {HTMLElement} chip
+ */
+const selectChip = (chip) => {
+    app.querySelectorAll('[data-action="vm-selectset"]').forEach((c) => {
+        c.classList.toggle('vm-selected', c === chip);
+        c.setAttribute('aria-checked', c === chip ? 'true' : 'false');
+        c.tabIndex = c === chip ? 0 : -1;
+    });
+};
+
+/**
+ * Arrow keys, Home and End move the selection within the set picker (radio group pattern).
+ *
+ * @param {KeyboardEvent} e
+ */
+const onChipKey = (e) => {
+    const chip = e.target.closest && e.target.closest('[data-action="vm-selectset"]');
+    if (!chip || e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+    }
+    const chips = Array.from(app.querySelectorAll('[data-action="vm-selectset"]'));
+    const i = chips.indexOf(chip);
+    let next = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        next = chips[(i + 1) % chips.length];
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        next = chips[(i - 1 + chips.length) % chips.length];
+    } else if (e.key === 'Home') {
+        next = chips[0];
+    } else if (e.key === 'End') {
+        next = chips[chips.length - 1];
+    }
+    if (next) {
+        e.preventDefault();
+        selectChip(next);
+        next.focus();
     }
 };
 
@@ -888,10 +1329,7 @@ export const init = (config) => {
     app.addEventListener('click', (e) => {
         const chip = e.target.closest('[data-action="vm-selectset"]');
         if (chip) {
-            app.querySelectorAll('[data-action="vm-selectset"]').forEach((c) => {
-                c.classList.toggle('vm-selected', c === chip);
-                c.setAttribute('aria-checked', c === chip ? 'true' : 'false');
-            });
+            selectChip(chip);
             return;
         }
         const btn = e.target.closest('[data-action]');
@@ -907,6 +1345,11 @@ export const init = (config) => {
             onStageAction(action, btn);
         }
     });
+    const chips = app.querySelectorAll('[data-action="vm-selectset"]');
+    if (chips.length) {
+        selectChip(app.querySelector('[data-action="vm-selectset"].vm-selected') || chips[0]);
+        app.addEventListener('keydown', onChipKey);
+    }
     if (!keysBound) {
         keysBound = true;
         document.addEventListener('keydown', onKey);

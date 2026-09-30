@@ -65,6 +65,7 @@
                     <span class="badge bg-info text-dark ms-2">{{items}}</span>
                     {{#gated}}<span class="badge bg-success ms-1" title="{{#str}}gated, mod_vocabmastery{{/str}}">{{#str}}gatedshort, mod_vocabmastery{{/str}}</span>{{/gated}}
                     <span class="badge bg-light text-dark ms-1">{{answers}}</span>
+                    {{#reports}}<a class="badge bg-warning text-dark ms-1" href="{{url}}#vm-reports">{{reports}}</a>{{/reports}}
                     <span class="ms-2">{{#actions}}{{> mod_vocabmastery/manage_action}}{{/actions}}</span>
                 </li>
                 {{/sets}}

@@ -28,7 +28,7 @@
 }}
 {{#instruction}}<div class="vm-tr-instruction">{{instruction}}</div>{{/instruction}}
 {{#hastags}}<div class="vm-tr-tags">{{#injected}}<span class="vm-tag vm-tag-warn">{{difficulttag}}</span>{{/injected}}{{#optional}}<span class="vm-tag">{{optionaltag}}</span>{{/optional}}</div>{{/hastags}}
-<div class="vm-tr-prompt">{{prompt}}</div>
+<div class="vm-tr-prompt" data-region="prompt" tabindex="-1">{{prompt}}</div>
 {{#translation}}<div class="vm-tr-translation">{{translation}}</div>{{/translation}}
 {{#choice}}
 <div class="vm-tr-answers vm-n{{optioncount}}">
@@ -46,7 +46,7 @@
     <button type="button" class="vm-btn vm-btn-primary" data-action="check">{{checklabel}}</button>
 </div>
 {{/choice}}
-<div class="vm-tr-feedback" role="status" data-region="feedback"></div>
+<div class="vm-tr-feedback" data-region="feedback"></div>
 <div class="vm-tr-actions" data-region="actions">
     {{#hashint}}<button type="button" class="vm-btn vm-btn-ghost vm-btn-sm" data-action="hint">{{#icons.hint}}{{> mod_vocabmastery/icon}}{{/icons.hint}}<span>{{hintlabel}}</span></button>{{/hashint}}
 </div>

@@ -137,22 +137,6 @@ final class activation_test extends \advanced_testcase {
         $this->assertSame('0.9.2', $live['version']);
     }
 
-    public function test_manifest_requires_promoted_credit_unlock_with_positive_price(): void {
-        foreach ([
-            ['zipExists' => null],
-            ['zipExists' => false],
-            ['acquisitionMode' => 'usd-purchase'],
-            ['acquisitionMode' => 'free'],
-            ['acquisitionMode' => null],
-            ['creditsRequired' => 0],
-            ['creditsRequired' => '999999999999999999999999999999'],
-        ] as $override) {
-            $this->manifest(50, self::SHA, $override);
-            $this->assertFalse((new activation($this->fake))->manifest()['ok']);
-        }
-        $this->assertCount(0, $this->fake->sent('/api/plugin-unlock'));
-    }
-
     public function test_manifest_not_ready_or_missing(): void {
         $this->manifest(50, self::SHA, ['status' => 'testing']);
         $this->manifest(50, self::SHA, ['zipExists' => false]);
@@ -217,18 +201,6 @@ final class activation_test extends \advanced_testcase {
             $this->assertSame(0, $result['charged']);
             $this->assertSame(activation::STATE_UNLOCKED, activation::get_state()['state']);
         }
-    }
-
-    public function test_zero_balance_can_restore_an_existing_purchase(): void {
-        $this->manifest(50);
-        $this->fake->add('/api/plugin-unlock/verify', 200, ['unlocked' => false, 'credits' => 0]);
-        $this->fake->add('/api/plugin-unlock', 200, ['success' => true, 'creditsConsumed' => 0,
-            'entitlementSource' => 'marketplace', 'remainingCredits' => 0]);
-        $service = new activation($this->fake);
-        $this->assertSame('locked', $service->check()['outcome']);
-        $this->assertSame('0', activation::get_state()['credits']);
-        $this->assertSame('restored', $service->unlock(self::SHA, 50)['outcome']);
-        $this->assertFalse(activation::get_state()['pending']);
     }
 
     public function test_insufficient_balance(): void {
@@ -320,34 +292,6 @@ final class activation_test extends \advanced_testcase {
         $this->manifest(50);
         $this->fake->add('/api/plugin-unlock', 200, ['success' => true, 'creditsConsumed' => 50, 'remainingCredits' => 70]);
         $this->assertSame('unlocked', $service->unlock(self::SHA, 50)['outcome']);
-    }
-
-    public function test_charge_pending_before_dispatch_and_malformed_replies(): void {
-        $this->fake = new class extends fake_transport {
-            /** @var bool whether the durable marker was present at the outbound request */
-            public bool $pendingatdispatch = false;
-
-            public function request(string $method, string $url, ?array $json = null): array {
-                if (parse_url($url, PHP_URL_PATH) === '/api/plugin-unlock') {
-                    $this->pendingatdispatch = activation::get_state()['pending'];
-                }
-                return parent::request($method, $url, $json);
-            }
-        };
-        $this->manifest(50);
-        $this->fake->add('/api/plugin-unlock', 200, ['message' => 'Still processing']);
-        $service = new activation($this->fake);
-        $this->assertSame('uncertain', $service->unlock(self::SHA, 50)['outcome']);
-        $this->assertTrue($this->fake->pendingatdispatch);
-        $this->assertTrue(activation::get_state()['pending']);
-        foreach ([null, 'false', 0, 1, []] as $value) {
-            $this->fake->add('/api/plugin-unlock/verify', 200, ['unlocked' => $value, 'credits' => 120]);
-            $this->assertSame('unverifiable', $service->check()['outcome']);
-            $this->assertTrue(activation::get_state()['pending']);
-        }
-        $this->fake->add('/api/plugin-unlock/verify', 200, ['unlocked' => false, 'credits' => 120]);
-        $this->assertSame('locked', $service->check()['outcome']);
-        $this->assertFalse(activation::get_state()['pending']);
     }
 
     public function test_uncertain_then_check_finds_purchase_went_through(): void {

@@ -97,6 +97,23 @@ class finish_session extends external_api {
                 'level' => new external_value(PARAM_TEXT, 'Level name'),
                 'url' => new external_value(PARAM_URL, 'Link'),
             ])),
+            'seconds' => new external_value(PARAM_INT, 'Session length in seconds'),
+            'previousscore' => new external_value(PARAM_FLOAT, 'Score of the previous session of this kind, -1 if none'),
+            'answers' => new external_multiple_structure(new external_single_structure([
+                'itemid' => new external_value(PARAM_INT, 'Item'),
+                'prompt' => new external_value(PARAM_TEXT, 'Prompt'),
+                'correct' => new external_value(PARAM_TEXT, 'Correct answer'),
+                'given' => new external_value(PARAM_TEXT, 'First answer given, empty if unanswered'),
+                'iscorrect' => new external_value(PARAM_BOOL, 'First answer was right'),
+                'translation' => new external_value(PARAM_TEXT, 'Translation'),
+                'setname' => new external_value(PARAM_TEXT, 'Set'),
+                'prefix' => new external_value(PARAM_BOOL, 'Show answer before the word (article style)'),
+            ])),
+            'sets' => new external_multiple_structure(new external_single_structure([
+                'name' => new external_value(PARAM_TEXT, 'Set'),
+                'correct' => new external_value(PARAM_INT, 'Right first time'),
+                'total' => new external_value(PARAM_INT, 'Words'),
+            ])),
         ]);
     }
 }

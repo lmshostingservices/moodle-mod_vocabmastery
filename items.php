@@ -47,6 +47,18 @@ $PAGE->activityheader->disable();
 
 $fields = ['correctvalue', 'prompt', 'translation', 'plural', 'altanswers', 'hint'];
 
+$resolveflag = optional_param('resolveflag', 0, PARAM_INT);
+if ($resolveflag && data_submitted() && confirm_sesskey()) {
+    $flag = $DB->get_record('vocabmastery_flag', ['id' => $resolveflag, 'vocabmasteryid' => $vmid], '*', MUST_EXIST);
+    $DB->update_record('vocabmastery_flag', (object)['id' => $flag->id, 'resolved' => 1, 'timemodified' => time()]);
+    redirect(
+        new moodle_url($url, [], 'vm-reports'),
+        get_string('reports_resolved', $c),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
+}
+
 if (($submitted = data_submitted()) && confirm_sesskey()) {
     $existing = $instance->get_set_items($setid);
     $posted = json_decode(json_encode($submitted->items ?? []), true) ?: [];
@@ -126,6 +138,7 @@ if (($submitted = data_submitted()) && confirm_sesskey()) {
         }
     }
     $transaction->allow_commit();
+    content::queue_recompute($vmid);
     if ($added) {
         $message .= ' ' . get_string('itemsadded', $c, $added);
     }
@@ -134,6 +147,36 @@ if (($submitted = data_submitted()) && confirm_sesskey()) {
 
 $items = $instance->get_set_items($setid);
 $PAGE->requires->js_call_amd('mod_vocabmastery/items', 'init');
+
+// Open problem reports from learners for words in this set.
+$reports = [];
+$flagged = [];
+if ($items) {
+    [$in, $params] = $DB->get_in_or_equal(array_keys($items), SQL_PARAMS_NAMED);
+    $userfields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
+    $flags = $DB->get_records_sql(
+        "SELECT f.*, $userfields
+           FROM {vocabmastery_flag} f
+           JOIN {user} u ON u.id = f.userid
+          WHERE f.resolved = 0 AND f.itemid $in
+       ORDER BY f.timecreated DESC",
+        $params
+    );
+    foreach ($flags as $f) {
+        $flagged[(int)$f->itemid] = true;
+        $item = $items[$f->itemid];
+        $reports[] = [
+            'id' => (int)$f->id,
+            'word' => $item->prompt . ' → ' . $item->correctvalue,
+            'reason' => get_string('reason_' . $f->reason, $c),
+            'comment' => (string)$f->commenttext,
+            'by' => get_string('reports_by', $c, (object)['name' => fullname($f), 'date' => userdate(
+                $f->timecreated,
+                get_string('strftimedatetimeshort', 'langconfig')
+            )]),
+        ];
+    }
+}
 
 $labels = array_combine($fields, array_map(fn($f) => get_string('field_' . $f, $c), $fields));
 $othersets = [];
@@ -162,6 +205,7 @@ foreach ($items as $item) {
         'search' => core_text::strtolower($item->prompt . ' ' . $item->correctvalue . ' ' . $item->translation),
         'prompt' => $item->prompt,
         'iscore' => (bool)$item->iscore,
+        'flagged' => !empty($flagged[(int)$item->id]),
         'cells' => array_map(fn($f) => ['name' => "items[{$item->id}][$f]", 'value' => (string)$item->$f, 'field' => $f,
             'label' => $labels[$f]], $fields),
     ];
@@ -195,5 +239,8 @@ echo $OUTPUT->render_from_template('mod_vocabmastery/items', [
     'fields' => array_map(fn($f) => ['field' => $f, 'label' => $labels[$f]], $fields),
     'items' => $itemsdata,
     'newrows' => $newrows,
+    'hasreports' => (bool)$reports,
+    'reportstitle' => get_string('reports_open', $c, count($reports)),
+    'reports' => $reports,
 ]);
 echo $OUTPUT->footer();

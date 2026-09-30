@@ -2,13 +2,127 @@
 
 All notable changes to mod_vocabmastery are documented here.
 
-## [v0.9.4] - 2026-09-28
+## [v1.0.1] - 2026-09-30
+
+### Added
+- Help (?) icons on every setting: activity settings (including the learner colour scheme,
+  training modes, "latest answers in a row" and the completion rules), set, topic and level
+  forms, and the import screens.
+
+### Changed
+- All help texts rewritten in plain language with examples and the matching option names.
+
+## [v1.0.0] - 2026-09-30
+
+First production release. Same code as 0.9.6, which fixed every finding of the 0.9.5
+production-readiness audit. No database or behaviour changes.
+
+### Release status
+- Supports Moodle 4.4 to 5.2; tested on PHP 8.3 and 8.4.
+- Automated coverage: 82 PHPUnit tests and Behat scenarios for learner practice (with axe
+  accessibility checks) and separate-groups reporting.
+- Activation with LMS Labs stays informational: no licence gate, no paid calls.
+
+## [v0.9.6] - 2026-09-29
+
+Fixes everything found in the 0.9.5 production-readiness audit. No database schema changes.
+
+### Fixed – grades and progress
+- A mastery check scores each word once, even if the same answer is sent twice at the same time.
+  Answers to one session are now saved one at a time (per-session lock).
+- Repeating the same right answer inside one session no longer masters a word; at most 10
+  answers per word are stored per session.
+- Only one mastery check per topic can be open; starting a new one scores the old one as it stands.
+- During a mastery check the server no longer returns the word's learning state (it hinted at
+  whether an answer was right).
+- A topic without core words no longer locks the topics after it, blocks "pass all topics"
+  completion or holds the grade below 100%.
+- A practice pass is saved as soon as the last word is mastered, not only when the session is finished.
+- New scheduled task finishes sessions left open for more than a day, so progress and grades are saved.
+- Editing, deleting or moving words, and changing a set, now recalculates stored progress, grades
+  and completion in the background (ad-hoc task), so the teacher report matches what learners see.
+- Deleting a topic or set also deletes its sessions; finishing a session whose topic was deleted
+  no longer recreates progress for it.
+- Two simultaneous first answers to a word no longer fail with a database error.
+- Teachers previewing the trainer no longer get grades or completion.
+
+### Fixed – import
+- "Replace the whole set" updates words that are still in the file in place, so learners keep their
+  progress; only words missing from the file are removed. The import summary shows how many.
+- CSV/Excel imports honour the set columns "gated", "answer mode" (fixed/pool) and "instruction".
+  Sets with a few unique answers (e.g. verb meanings) are no longer turned into fixed buttons.
+- Word imports refuse documents that unpack to more than 20 MB; spreadsheets with more than
+  10,000 rows or 30 columns are refused before loading, and formulas are not evaluated.
+- The client-specific footer filter in the Word importer is replaced by a site setting
+  ("Lines to ignore in Word imports").
+
+### Fixed – teacher report and privacy
+- The report respects separate groups: teachers without "Access all groups" only see and export
+  learners in their own groups.
+- The results download uses the site's "Show user identity" fields instead of always including email.
+- The heatmap and its legend show their colours again.
+- Word reports from learners are now included in backups and restored.
+- Privacy metadata lists every stored field.
+
+### Fixed – learner trainer and accessibility
+- Keyboard: Enter and Space no longer hijack focused buttons; focus moves to the next question after
+  an answer, a hint or the report form; Escape closes the report form.
+- Double-clicking a mode no longer starts two sessions; timers stop when a session ends.
+- If saving the end of a session fails, the learner sees an error with "Try again".
+- Leaving Learn mode or a mastery check closes the session.
+- A failed word report keeps the comment and can be sent again.
+- Focus outline, small grey text and passed-topic cells meet WCAG contrast.
+- Screen readers hear "Correct"/"Wrong" in the results grid; feedback is announced once; the set
+  picker supports arrow keys; the "Report a problem" link is a 24 px target.
+- Filtering the word list unticks hidden rows so they cannot be bulk-deleted by accident.
+- Wording: correct singular/plural, en dashes, consistent "learner" and "…".
+
+## [v0.9.5] - 2026-09-29
+
+### Changed
+- New colour scheme, "Harbour & Coral", replacing the stock indigo/violet palette and the dark
+  purple results header:
+  - navy brand (#23408e) with navy-tinted neutrals;
+  - coral highlight (#f26b4f) for Blitz, Streak and personal bests;
+  - honey for "needs work";
+  - green and red only for right and wrong.
+
+  All plugin colours now come from one set of tokens, with a matching dark scheme. There are no
+  code, database or language changes.
+
+## [v0.9.4] - 2026-09-29
+
+### Added
+- New results screen after every session, including the mastery check:
+  - score ring coloured by result, with a headline and encouragement line;
+  - time taken, personal best, and comparison with the last session of the same kind
+    ("Last time 45% → now 60% (+15)", with a "Big jump!" tag at +20 or more);
+  - an answer grid (one tile per word, right or wrong);
+  - "You're strong in" and "Let's work on" by set, when a session covers several sets;
+  - one recommended next step (practise the missed words, take the mastery check, go again or
+    start practising);
+  - "Review answers", listing every word with the correct form, the learner's answer and the
+    translation.
+- Learners can report a problem with a word ("Report a problem": wrong answer, spelling,
+  translation or other, with an optional comment). This is available after answering in practice
+  and in the answer review. Teachers see open reports on the word table of the set and a
+  "N reported" badge on the manage page, and mark each report as fixed. Stored in the new table
+  `vocabmastery_flag` and covered by the Privacy API, instance deletion, item deletion and course
+  reset. Reports are not included in backups.
+- Elapsed-time clock in the session header (Blitz keeps its countdown).
+- Web service `mod_vocabmastery_report_item` (requires `mod/vocabmastery:attempt`).
+
+### Changed
+- Practice and difficult-word sessions are scored on words right first time, which matches the
+  answer grid. Earlier sessions keep their old score (right answers out of all answers given).
+- A missed word comes back at most twice in one practice session, so a session always ends. Words
+  still missed are kept for next time.
 
 ### Fixed
-- A low balance warns instead of blocking Marketplace/direct-purchase restoration at zero credits.
-- A purchase is offered only for a ready ZIP with a positive integer credit price and exact `credit-unlock` acquisition mode.
-- An uncertain unlock stays pending from before the outbound call until a strictly boolean free check resolves it; malformed verification and ambiguous success replies cannot be mistaken for definitive results.
-- Existing learning and local practice do not require a commercial entitlement or a network connection.
+- Word forms in feedback and reviews: only short one-word answers from fixed buttons (articles)
+  are written before the word ("die Frau"). Longer answers now read "wohnen → to live" instead of
+  "to live wohnen".
+- A 0% progress ring no longer shows a stray dot.
 
 ## [v0.9.3] - 2026-09-28
 

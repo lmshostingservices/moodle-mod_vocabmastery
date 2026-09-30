@@ -42,6 +42,7 @@ class set_form extends \moodleform {
         $m->setType('action', PARAM_ALPHA);
         $m->addElement('select', 'topicid', get_string('topic', $c), $this->_customdata['topics']);
         $m->addElement('text', 'name', get_string('setname', $c), ['size' => 50]);
+        $m->addHelpButton('name', 'setname', $c);
         $m->setType('name', PARAM_TEXT);
         $m->addRule('name', null, 'required', null, 'client');
         $m->addElement('text', 'instruction', get_string('instruction', $c), ['size' => 50]);
@@ -51,6 +52,7 @@ class set_form extends \moodleform {
             'choice' => get_string('itemtype_choice', $c),
             'typed' => get_string('itemtype_typed', $c),
         ]);
+        $m->addHelpButton('itemtype', 'itemtype', $c);
         $m->addElement('select', 'answermode', get_string('answermode', $c), [
             'fixed' => get_string('answermode_fixed', $c),
             'pool' => get_string('answermode_pool', $c),
@@ -64,9 +66,11 @@ class set_form extends \moodleform {
         $m->hideIf('options', 'itemtype', 'eq', 'typed');
         $m->addElement('select', 'numoptions', get_string('numoptions', $c), array_combine(range(2, 6), range(2, 6)));
         $m->setDefault('numoptions', 4);
+        $m->addHelpButton('numoptions', 'numoptions', $c);
         $m->hideIf('numoptions', 'answermode', 'neq', 'pool');
         $m->hideIf('numoptions', 'itemtype', 'eq', 'typed');
         $m->addElement('advcheckbox', 'showtranslation', get_string('showtranslation', $c));
+        $m->addHelpButton('showtranslation', 'showtranslation', $c);
         $m->setDefault('showtranslation', 1);
         $m->addElement('advcheckbox', 'gated', get_string('gated', $c));
         $m->setDefault('gated', 1);

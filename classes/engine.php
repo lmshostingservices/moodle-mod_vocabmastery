@@ -30,7 +30,10 @@ use stdClass;
  */
 class engine {
     /** Modes that exist. */
-    const MODES = ['learn', 'practice', 'blitz', 'streak', 'difficult', 'test'];
+    public const MODES = ['learn', 'practice', 'blitz', 'streak', 'difficult', 'test'];
+
+    /** Most answers stored for one word in one session (stops scripted flooding). */
+    public const MAX_RESPONSES_PER_ITEM = 10;
 
     /** @var instance */
     protected instance $instance;
@@ -323,6 +326,22 @@ class engine {
             $ordered = self::weighted_order($pool);
         }
 
+        if ($mode === 'test') {
+            // Only one mastery check per topic can be open. An earlier unfinished one is scored as it stands.
+            // Unanswered words count as wrong.
+            $open = $DB->get_records('vocabmastery_attempt', ['vocabmasteryid' => $vm->id, 'userid' => $this->userid,
+                'topicid' => $topicid, 'mode' => 'test', 'finished' => 0], '', 'id');
+            foreach ($open as $old) {
+                try {
+                    $this->finish((int)$old->id);
+                } catch (\moodle_exception $e) {
+                    // Already finished by a parallel request.
+                    continue;
+                }
+            }
+            $this->progress->reset();
+        }
+
         $attempt = (object)[
             'vocabmasteryid' => $vm->id,
             'userid' => $this->userid,
@@ -470,6 +489,27 @@ class engine {
     }
 
     /**
+     * Run a callback while holding the lock for one attempt, so parallel requests
+     * for the same session are applied one at a time.
+     *
+     * @param int $attemptid
+     * @param callable $callback
+     * @return mixed
+     */
+    protected function with_attempt_lock(int $attemptid, callable $callback) {
+        $factory = \core\lock\lock_config::get_lock_factory('mod_vocabmastery_attempt');
+        $lock = $factory->get_lock('attempt_' . $attemptid, 10);
+        if (!$lock) {
+            throw new \moodle_exception('errorbusy', 'mod_vocabmastery');
+        }
+        try {
+            return $callback();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
      * Load and check an attempt belongs to the user and is open.
      *
      * @param int $attemptid
@@ -498,6 +538,24 @@ class engine {
      * @return array
      */
     public function record(int $attemptid, int $itemid, string $response, int $responsetime, bool $hinted): array {
+        $this->get_open_attempt($attemptid);
+        return $this->with_attempt_lock(
+            $attemptid,
+            fn() => $this->record_locked($attemptid, $itemid, $response, $responsetime, $hinted)
+        );
+    }
+
+    /**
+     * Record one answer (caller holds the attempt lock).
+     *
+     * @param int $attemptid
+     * @param int $itemid
+     * @param string $response
+     * @param int $responsetime ms
+     * @param bool $hinted
+     * @return array
+     */
+    protected function record_locked(int $attemptid, int $itemid, string $response, int $responsetime, bool $hinted): array {
         global $DB;
         $attempt = $this->get_open_attempt($attemptid);
         $item = $DB->get_record(
@@ -516,7 +574,13 @@ class engine {
                 return ['correct' => false, 'recorded' => false, 'state' => '', 'mastery' => -1];
             }
             $hinted = false;
-        } else if (!in_array($itemid, $allowed, true)) {
+        } else if (
+            $DB->count_records('vocabmastery_response', ['attemptid' => $attemptid, 'itemid' => $itemid])
+                >= self::MAX_RESPONSES_PER_ITEM
+        ) {
+            return ['correct' => false, 'recorded' => false, 'state' => '', 'mastery' => -1];
+        }
+        if ($mode !== 'test' && !in_array($itemid, $allowed, true)) {
             // Injected difficult items: must be from an unlocked topic of this activity.
             $set = $this->instance->get_set((int)$item->setid);
             $summary = $this->progress->get_summary((int)$set->topicid);
@@ -530,6 +594,12 @@ class engine {
         } else {
             $correct = self::is_correct($item, $response);
         }
+        // A word counts towards mastery at most once correct per session.
+        // Repeating the same right answer inside one session cannot master it.
+        $alreadycorrect = $correct && $mode !== 'test' && $DB->record_exists(
+            'vocabmastery_response',
+            ['attemptid' => $attemptid, 'itemid' => $itemid, 'correct' => 1]
+        );
         $now = time();
         $DB->insert_record('vocabmastery_response', (object)[
             'attemptid' => $attemptid,
@@ -553,15 +623,21 @@ class engine {
         $counts = in_array($mode, ['practice', 'difficult', 'test'], true)
             || (in_array($mode, ['blitz', 'streak'], true) && $this->instance->vm->blitzcountsmastery);
         $state = null;
-        if ($counts) {
+        if ($counts && !$alreadycorrect) {
             $state = $this->update_item_state($itemid, $correct, $hinted);
+            if ($state->newlymastered && $mode !== 'test' && $this->instance->vm->unlockby !== 'test') {
+                // Save a practice pass straight away: it must not depend on the session being finished.
+                $set = $this->instance->get_set((int)$item->setid);
+                $this->progress->recompute_topic((int)$set->topicid);
+            }
         } else {
             $this->touch_item($itemid);
         }
         return [
             'correct' => $mode === 'test' ? false : $correct,
             'recorded' => true,
-            'state' => $state ? self::state_label($state) : '',
+            // Never hint at correctness during a mastery check.
+            'state' => ($state && $mode !== 'test') ? self::state_label($state) : '',
             'mastery' => -1,
         ];
     }
@@ -595,8 +671,19 @@ class engine {
             $st = (object)['vocabmasteryid' => $vm->id, 'userid' => $this->userid, 'itemid' => $itemid,
                 'attempts' => 0, 'correct' => 0, 'wrong' => 0, 'streak' => 0, 'mastered' => 0,
                 'difficult' => 0, 'wasdifficult' => 0, 'lastseen' => 0];
-            $st->id = $DB->insert_record('vocabmastery_itemstate', $st);
+            try {
+                $st->id = $DB->insert_record('vocabmastery_itemstate', $st);
+            } catch (\dml_write_exception $e) {
+                // Another request created it a moment ago (unique user/item index).
+                $st = $DB->get_record(
+                    'vocabmastery_itemstate',
+                    ['userid' => $this->userid, 'itemid' => $itemid],
+                    '*',
+                    MUST_EXIST
+                );
+            }
         }
+        $wasmastered = (bool)$st->mastered;
         $st->attempts++;
         if ($correct && !$hinted) {
             $st->correct++;
@@ -614,6 +701,7 @@ class engine {
         }
         $st->lastseen = time();
         $DB->update_record('vocabmastery_itemstate', $st);
+        $st->newlymastered = !$wasmastered && $st->mastered;
         return $st;
     }
 
@@ -625,6 +713,18 @@ class engine {
      * @return array summary
      */
     public function finish(int $attemptid, int $beststreak = 0): array {
+        $this->get_open_attempt($attemptid);
+        return $this->with_attempt_lock($attemptid, fn() => $this->finish_locked($attemptid, $beststreak));
+    }
+
+    /**
+     * Finish a session (caller holds the attempt lock).
+     *
+     * @param int $attemptid
+     * @param int $beststreak
+     * @return array summary
+     */
+    protected function finish_locked(int $attemptid, int $beststreak): array {
         global $DB;
         $attempt = $this->get_open_attempt($attemptid);
         $vm = $this->instance->vm;
@@ -632,6 +732,16 @@ class engine {
         $topicid = (int)$attempt->topicid;
 
         $responses = $DB->get_records('vocabmastery_response', ['attemptid' => $attemptid], 'id');
+        if ($mode === 'test') {
+            // One answer per word: only the first response to each word is scored.
+            $firstonly = [];
+            foreach ($responses as $r) {
+                $firstonly[(int)$r->itemid] = $firstonly[(int)$r->itemid] ?? $r;
+            }
+            $responses = $firstonly;
+        }
+        // The topic may have been deleted while the session was open.
+        $orphan = $topicid && !$DB->record_exists('vocabmastery_topic', ['id' => $topicid]);
         $total = count($responses);
         $correct = count(array_filter($responses, fn($r) => $r->correct));
         $questioncount = $total;
@@ -665,7 +775,9 @@ class engine {
 
         $passed = 0;
         $result = ['mastery' => -1, 'passed' => false, 'newlypassed' => false];
-        if ($mode === 'test') {
+        if ($orphan) {
+            $topicid = 0;
+        } else if ($mode === 'test') {
             $passed = $score >= (float)$vm->masterythreshold ? 1 : 0;
             $result = $this->progress->recompute_topic($topicid, $score);
         } else if ($mode === 'learn') {
@@ -737,6 +849,73 @@ class engine {
             }
         }
 
+        // Per-question review: first answer per word (the order the words were asked), or unanswered.
+        $answers = [];
+        $setstats = [];
+        if ($mode !== 'learn') {
+            $first = [];
+            foreach ($responses as $r) {
+                if (!isset($first[(int)$r->itemid])) {
+                    $first[(int)$r->itemid] = $r;
+                }
+            }
+            $order = array_keys($first);
+            if ($mode === 'test') {
+                $order = array_values(array_unique(array_merge(
+                    array_filter(array_map('intval', explode(',', (string)$attempt->itemids))),
+                    $order
+                )));
+            }
+            $order = array_slice($order, 0, 200);
+            $items = $order ? $DB->get_records_list('vocabmastery_item', 'id', $order) : [];
+            $sets = $this->instance->get_all_sets();
+            foreach ($order as $id) {
+                if (!isset($items[$id])) {
+                    continue;
+                }
+                $it = $items[$id];
+                $set = $sets[$it->setid] ?? null;
+                $ok = isset($first[$id]) && (bool)$first[$id]->correct;
+                $answers[] = [
+                    'itemid' => (int)$id,
+                    'prompt' => $it->prompt,
+                    'correct' => $it->correctvalue,
+                    'given' => isset($first[$id]) ? (string)$first[$id]->response : '',
+                    'iscorrect' => $ok,
+                    'translation' => (string)$it->translation,
+                    'setname' => $set ? format_string($set->name) : '',
+                    'prefix' => $set ? self::answer_is_prefix($set, $it->correctvalue) : false,
+                ];
+                if ($set) {
+                    $sid = (int)$set->id;
+                    $setstats[$sid] = $setstats[$sid] ?? ['name' => format_string($set->name), 'correct' => 0, 'total' => 0];
+                    $setstats[$sid]['total']++;
+                    $setstats[$sid]['correct'] += $ok ? 1 : 0;
+                }
+            }
+        }
+
+        // Practice-style sessions are scored on words right first time, matching the answer grid.
+        if (in_array($mode, ['practice', 'difficult'], true) && $answers) {
+            $firstright = count(array_filter($answers, fn($a) => $a['iscorrect']));
+            $score = round($firstright / count($answers) * 100, 2);
+            $DB->set_field('vocabmastery_attempt', 'score', $score, ['id' => $attemptid]);
+        }
+
+        // The previous finished session of the same kind, for "last time" comparisons.
+        $previous = $DB->get_records_select(
+            'vocabmastery_attempt',
+            'userid = :userid AND vocabmasteryid = :vid AND mode = :mode AND topicid = :topicid AND setid = :setid
+                AND finished = 1 AND id <> :id',
+            ['userid' => $this->userid, 'vid' => $vm->id, 'mode' => $mode, 'topicid' => $topicid,
+                'setid' => (int)$attempt->setid, 'id' => $attemptid],
+            'timefinish DESC, id DESC',
+            'id, score',
+            0,
+            1
+        );
+        $previousscore = $previous ? (float)reset($previous)->score : -1.0;
+
         $isbest = in_array($mode, ['blitz', 'streak'], true)
             && ($mode === 'blitz' ? $correct : $beststreak) > $previousbest && $total > 0;
 
@@ -756,6 +935,26 @@ class engine {
             'threshold' => (int)$vm->masterythreshold,
             'mistakes' => $mistakes,
             'routes' => $routes,
+            'seconds' => max(0, time() - (int)$attempt->timestart),
+            'previousscore' => $previousscore,
+            'answers' => $answers,
+            'sets' => array_values($setstats),
         ];
+    }
+
+    /**
+     * Whether an answer is naturally written before the word (an article such as "die Frau").
+     *
+     * True for short one-word answers chosen from fixed buttons; other answers are shown as
+     * "word → answer". No particular language is assumed.
+     *
+     * @param \stdClass $set
+     * @param string $answer
+     * @return bool
+     */
+    public static function answer_is_prefix(\stdClass $set, string $answer): bool {
+        $answer = trim($answer);
+        return $set->answermode === 'fixed' && $answer !== '' && !preg_match('/\s/u', $answer)
+            && \core_text::strlen($answer) <= 4;
     }
 }

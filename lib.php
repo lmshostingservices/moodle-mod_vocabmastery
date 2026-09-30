@@ -96,7 +96,7 @@ function vocabmastery_delete_instance($id) {
     if (!$vm = $DB->get_record('vocabmastery', ['id' => $id])) {
         return false;
     }
-    foreach (['response', 'attempt', 'itemstate', 'topicstate', 'item', 'set', 'topic', 'level'] as $t) {
+    foreach (['response', 'attempt', 'itemstate', 'topicstate', 'flag', 'item', 'set', 'topic', 'level'] as $t) {
         $DB->delete_records('vocabmastery_' . $t, ['vocabmasteryid' => $id]);
     }
     vocabmastery_grade_item_delete($vm);
@@ -314,7 +314,7 @@ function vocabmastery_reset_userdata($data) {
     if (!empty($data->reset_vocabmastery_progress)) {
         $ids = $DB->get_fieldset_select('vocabmastery', 'id', 'course = :course', ['course' => $data->courseid]);
         foreach ($ids as $id) {
-            foreach (['response', 'attempt', 'itemstate', 'topicstate'] as $t) {
+            foreach (['response', 'attempt', 'itemstate', 'topicstate', 'flag'] as $t) {
                 $DB->delete_records('vocabmastery_' . $t, ['vocabmasteryid' => $id]);
             }
             $vm = $DB->get_record('vocabmastery', ['id' => $id]);

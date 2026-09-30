@@ -49,4 +49,12 @@ $functions = [
         'capabilities' => 'mod/vocabmastery:view',
         'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
     ],
+    'mod_vocabmastery_report_item' => [
+        'classname' => 'mod_vocabmastery\external\report_item',
+        'description' => 'A learner reports a problem with a word.',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'mod/vocabmastery:attempt',
+        'services' => [MOODLE_OFFICIAL_MOBILE_SERVICE],
+    ],
 ];

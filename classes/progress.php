@@ -150,6 +150,8 @@ class progress {
             $s->learned = $state ? (bool)$state->learned : false;
             $s->started = (bool)array_filter($all, fn($r) => $r->attempts > 0);
             $s->lastseen = $all ? max(array_map(fn($r) => (int)$r->lastseen, $all)) : 0;
+            // A topic without core words has nothing to master. It never blocks progression, completion or grade.
+            $s->empty = $s->corecount === 0;
             $summaries[$tid] = $s;
         }
         $this->apply_unlocks($summaries);
@@ -239,7 +241,7 @@ class progress {
     protected function apply_unlocks(array &$summaries): void {
         $mode = $this->instance->vm->progressionmode;
         $topics = array_values($this->instance->get_topics());
-        $passed = array_map(fn($s) => $s->passed, $summaries);
+        $passed = array_map(fn($s) => $s->passed || $s->empty, $summaries);
         foreach ($summaries as $s) {
             $s->unlocked = false;
         }
@@ -326,12 +328,22 @@ class progress {
     }
 
     /**
+     * Summaries of the topics that count towards progress, completion and grade
+     * (topics without core words are left out).
+     *
+     * @return array topicid => stdClass
+     */
+    public function countable_summaries(): array {
+        return array_filter($this->get_summaries(), fn($s) => !$s->empty);
+    }
+
+    /**
      * Overall progress percentage (passed topics count as 100).
      *
      * @return float
      */
     public function overall_percent(): float {
-        $s = $this->get_summaries();
+        $s = $this->countable_summaries();
         if (!$s) {
             return 0;
         }
@@ -348,7 +360,7 @@ class progress {
      * @return int
      */
     public function topics_passed(): int {
-        return count(array_filter($this->get_summaries(), fn($s) => $s->passed));
+        return count(array_filter($this->countable_summaries(), fn($s) => $s->passed));
     }
 
     /**
@@ -357,7 +369,7 @@ class progress {
      * @return float
      */
     public function grade_percent(): float {
-        $s = $this->get_summaries();
+        $s = $this->countable_summaries();
         if (!$s) {
             return 0;
         }
@@ -451,9 +463,10 @@ class progress {
      *
      * @param int $topicid
      * @param float|null $testscore a just-finished mastery check score
+     * @param bool $notify update gradebook and completion afterwards
      * @return array ['mastery' => float, 'passed' => bool, 'newlypassed' => bool]
      */
-    public function recompute_topic(int $topicid, ?float $testscore = null): array {
+    public function recompute_topic(int $topicid, ?float $testscore = null, bool $notify = true): array {
         global $DB;
         $this->reset();
         $gated = $this->gated_items($topicid);
@@ -497,8 +510,36 @@ class progress {
             ]);
             $event->trigger();
         }
-        $this->after_change();
+        if ($notify) {
+            $this->after_change();
+        }
         return ['mastery' => $mastery, 'passed' => (bool)$state->passed, 'newlypassed' => $newlypassed];
+    }
+
+    /**
+     * Recalculate every topic the user has progress in (after the teacher changed content),
+     * then update the gradebook and completion once. A topic already passed stays passed.
+     */
+    public function recompute_all(): void {
+        global $DB;
+        $topics = $this->instance->get_topics();
+        $DB->delete_records_select(
+            'vocabmastery_topicstate',
+            'vocabmasteryid = :vid AND userid = :uid AND topicid NOT IN (SELECT id FROM {vocabmastery_topic})',
+            ['vid' => $this->instance->vm->id, 'uid' => $this->userid]
+        );
+        $withstate = array_keys($this->get_topic_states());
+        $started = array_unique(array_map(fn($r) => (int)$r->topicid, array_filter(
+            $this->get_item_rows(),
+            fn($r) => $r->attempts > 0
+        )));
+        foreach (array_unique(array_merge($withstate, $started)) as $tid) {
+            if (isset($topics[$tid])) {
+                $this->recompute_topic((int)$tid, null, false);
+            }
+        }
+        $this->reset();
+        $this->after_change();
     }
 
     /**
@@ -520,6 +561,10 @@ class progress {
      */
     public function after_change(): void {
         global $CFG;
+        if (!has_capability('mod/vocabmastery:attempt', $this->instance->context, $this->userid)) {
+            // Teachers previewing the trainer get no grades or completion.
+            return;
+        }
         require_once($CFG->dirroot . '/mod/vocabmastery/lib.php');
         require_once($CFG->libdir . '/completionlib.php');
         $vm = clone $this->instance->vm;

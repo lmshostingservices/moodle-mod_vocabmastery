@@ -45,7 +45,17 @@ export const init = () => {
             const q = filter.value.trim().toLowerCase();
             table.querySelectorAll('tbody tr[data-search]').forEach((tr) => {
                 tr.hidden = q !== '' && !tr.dataset.search.includes(q);
+                if (tr.hidden) {
+                    // Rows hidden by the filter must not be changed by a bulk action.
+                    const cb = tr.querySelector('input.vm-sel');
+                    if (cb) {
+                        cb.checked = false;
+                    }
+                }
             });
+            if (selectAll) {
+                selectAll.checked = false;
+            }
         });
     }
     if (selectAll) {
@@ -98,14 +108,14 @@ export const init = () => {
         if (!bulk || bulk.value !== 'delete' || form.dataset.confirmed) {
             return;
         }
-        const count = form.querySelectorAll('input.vm-sel:checked').length;
+        const count = form.querySelectorAll('tbody tr:not([hidden]) input.vm-sel:checked').length;
         if (!count) {
             return;
         }
         e.preventDefault();
         getStrings([
             {key: 'confirm', component: 'core'},
-            {key: 'confirmdeleteitems', component: 'mod_vocabmastery', param: count},
+            {key: count === 1 ? 'confirmdeleteitems_one' : 'confirmdeleteitems', component: 'mod_vocabmastery', param: count},
             {key: 'delete', component: 'core'},
             {key: 'cancel', component: 'core'},
         ]).then(([title, question, yes, no]) => {

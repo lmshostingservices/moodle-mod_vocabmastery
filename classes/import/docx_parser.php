@@ -33,6 +33,9 @@ class docx_parser {
     const PREPOSITIONS = ['an', 'auf', 'aus', 'bei', 'durch', 'für', 'gegen', 'in', 'mit', 'nach', 'über', 'um',
         'unter', 'von', 'vor', 'zu', 'zwischen'];
 
+    /** Largest word/document.xml we unpack (bytes). */
+    const MAX_DOCUMENT_XML_BYTES = 20 * 1024 * 1024;
+
     /** Known article-style answer sets, in their natural order. */
     const ORDERED_OPTIONS = [
         ['der', 'die', 'das'],
@@ -53,7 +56,13 @@ class docx_parser {
         if ($zip->open($path) !== true) {
             throw new \moodle_exception('importdocxinvalid', 'mod_vocabmastery');
         }
-        $xml = $zip->getFromName('word/document.xml');
+        // Refuse documents that unpack to something huge (zip bombs) before reading them into memory.
+        $stat = $zip->statName('word/document.xml');
+        if ($stat && $stat['size'] > self::MAX_DOCUMENT_XML_BYTES) {
+            $zip->close();
+            throw new \moodle_exception('importtoolarge', 'mod_vocabmastery');
+        }
+        $xml = $stat ? $zip->getFromName('word/document.xml') : false;
         $zip->close();
         if ($xml === false) {
             throw new \moodle_exception('importdocxinvalid', 'mod_vocabmastery');
@@ -228,12 +237,32 @@ class docx_parser {
                 $doc['topic'] = pathinfo($filename, PATHINFO_FILENAME);
             }
         }
-        $doc['notes'] = implode("\n", array_filter(
-            $notes,
-            fn($n) => !preg_match('/^(Advent Training Group|Quelle:)/u', $n)
-        ));
+        $ignore = self::ignored_note_prefixes();
+        $doc['notes'] = implode("\n", array_filter($notes, function ($n) use ($ignore) {
+            foreach ($ignore as $prefix) {
+                if (\core_text::strpos(\core_text::strtolower($n), $prefix) === 0) {
+                    return false;
+                }
+            }
+            return true;
+        }));
         self::merge_and_validate($doc);
         return $doc;
+    }
+
+    /**
+     * Lines starting with these (lower case) are never kept as teacher notes: source lines,
+     * copyright footers and whatever the administrator listed in the plugin settings.
+     *
+     * @return string[]
+     */
+    protected static function ignored_note_prefixes(): array {
+        $configured = preg_split('/\r\n|\r|\n/', (string)get_config('mod_vocabmastery', 'importignorelines'));
+        $prefixes = array_merge(['quelle:', 'source:', '©', '(c) ', 'copyright'], $configured);
+        return array_values(array_unique(array_filter(array_map(
+            fn($p) => \core_text::strtolower(trim($p)),
+            $prefixes
+        ), fn($p) => $p !== '')));
     }
 
     /**
@@ -464,9 +493,10 @@ class docx_parser {
      *
      * @param string $kind
      * @param array $values distinct answer values
+     * @param int $itemcount number of words going into the set (0 = unknown)
      * @return array
      */
-    public static function settings_for(string $kind, array $values): array {
+    public static function settings_for(string $kind, array $values, int $itemcount = 0): array {
         $lower = array_map('mb_strtolower', $values);
         $options = null;
         foreach (self::ORDERED_OPTIONS as $set) {
@@ -491,7 +521,10 @@ class docx_parser {
                     'showtranslation' => 0, 'gated' => 0,
                     'instruction' => get_string('instruction_meaning', 'mod_vocabmastery')];
             default:
-                if ($options || (count($values) <= 6 && $values)) {
+                // Fixed buttons only for a known article set, or a few answers repeated across the words.
+                // Unique answers (e.g. verb meanings) use a pool.
+                $repeats = $itemcount > count($values);
+                if ($options || ($values && count($values) <= 6 && $repeats)) {
                     $opts = $options ?? $values;
                     return ['itemtype' => 'choice', 'answermode' => 'fixed', 'options' => implode("\n", $opts),
                         'numoptions' => count($opts), 'showtranslation' => 1, 'gated' => 1, 'instruction' => ''];

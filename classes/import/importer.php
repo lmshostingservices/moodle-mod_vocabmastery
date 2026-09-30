@@ -36,9 +36,12 @@ class importer {
     /** @var string skip|update|add|replace */
     protected string $duplicates;
     /** @var array stats */
-    public array $stats = ['levels' => 0, 'topics' => 0, 'sets' => 0, 'created' => 0, 'updated' => 0, 'skipped' => 0];
-    /** @var array set ids already emptied in replace mode */
+    public array $stats = ['levels' => 0, 'topics' => 0, 'sets' => 0, 'created' => 0, 'updated' => 0, 'skipped' => 0,
+        'deleted' => 0];
+    /** @var array replace mode: setid => ids of the words the set had before the import */
     protected array $replaced = [];
+    /** @var array replace mode: setid => [itemid => true] words matched by the import */
+    protected array $kept = [];
 
     /**
      * Constructor.
@@ -95,9 +98,16 @@ class importer {
         $before = $DB->count_records('vocabmastery_set', ['topicid' => $topicid]);
         $id = content::set_by_name($this->instance->vm->id, $topicid, $name, $settings);
         $this->stats['sets'] += $DB->count_records('vocabmastery_set', ['topicid' => $topicid]) - $before;
-        if ($this->duplicates === 'replace' && empty($this->replaced[$id])) {
-            content::delete_items($DB->get_fieldset_select('vocabmastery_item', 'id', 'setid = :setid', ['setid' => $id]));
-            $this->replaced[$id] = true;
+        if ($this->duplicates === 'replace' && !isset($this->replaced[$id])) {
+            // Remember what the set had. Matching words are updated in place, so learner progress is kept.
+            // Only words missing from the import are deleted at the end.
+            $this->replaced[$id] = array_map('intval', $DB->get_fieldset_select(
+                'vocabmastery_item',
+                'id',
+                'setid = :setid',
+                ['setid' => $id]
+            ));
+            $this->kept[$id] = [];
         }
         return $id;
     }
@@ -114,7 +124,21 @@ class importer {
             $this->stats['skipped']++;
             return;
         }
-        if ($this->duplicates !== 'add') {
+        if ($this->duplicates === 'replace') {
+            $dup = content::find_duplicate($setid, $item['prompt'], $item['correctvalue']);
+            if ($dup && in_array((int)$dup->id, $this->replaced[$setid] ?? [], true) && empty($this->kept[$setid][$dup->id])) {
+                $rec = (object)['id' => $dup->id, 'timemodified' => time()];
+                foreach (['translation', 'plural', 'altanswers', 'hint', 'explanation'] as $f) {
+                    $rec->$f = (string)($item[$f] ?? '');
+                }
+                $rec->iscore = isset($item['iscore']) ? (int)$item['iscore'] : 1;
+                $rec->metadata = !empty($item['metadata']) ? json_encode($item['metadata'], JSON_UNESCAPED_UNICODE) : null;
+                $DB->update_record('vocabmastery_item', content::clean_item($rec));
+                $this->kept[$setid][$dup->id] = true;
+                $this->stats['updated']++;
+                return;
+            }
+        } else if ($this->duplicates !== 'add') {
             $dup = content::find_duplicate($setid, $item['prompt'], $item['correctvalue']);
             if ($dup) {
                 if ($this->duplicates === 'update') {
@@ -187,7 +211,9 @@ class importer {
                 }
             }
         }
+        $this->finish_replace();
         $transaction->allow_commit();
+        content::queue_recompute((int)$this->instance->vm->id);
         $this->instance->reset_cache();
         $this->log();
         return $this->stats;
@@ -205,14 +231,22 @@ class importer {
     public function import_records(array $records, string $level, string $topic, string $set): array {
         global $DB;
         $transaction = $DB->start_delegated_transaction();
-        // Settings for new sets: derive from all answer values going into that set.
+        // Settings for new sets are derived from all answer values going into that set.
+        // Set columns in the file (gated, answer mode, instruction) are applied on top.
         $values = [];
+        $explicit = [];
         foreach ($records as $r) {
             $key = ($r['level'] ?? $level) . '|' . ($r['topic'] ?? $topic) . '|' . ($r['set'] ?? $set);
             if (($r['correctvalue'] ?? '') !== '') {
                 $values[$key][] = $r['correctvalue'];
             }
+            foreach (table_parser::SET_FIELDS as $f) {
+                if (isset($r[$f]) && $r[$f] !== '' && !isset($explicit[$key][$f])) {
+                    $explicit[$key][$f] = $r[$f];
+                }
+            }
         }
+        $applied = [];
         $pathkeys = [];
         foreach ($records as $r) {
             $lname = ($r['level'] ?? '') !== '' ? $r['level'] : $level;
@@ -227,18 +261,75 @@ class importer {
             $topicid = $this->topic($levelid, $tname, $pk);
             $key = ($r['level'] ?? $level) . '|' . ($r['topic'] ?? $topic) . '|' . ($r['set'] ?? $set);
             $vals = array_values(array_unique($values[$key] ?? []));
-            $setid = $this->set($topicid, $sname, docx_parser::settings_for('generic', $vals));
+            $settings = self::apply_set_columns(
+                docx_parser::settings_for('generic', $vals, count($values[$key] ?? [])),
+                $explicit[$key] ?? [],
+                $vals
+            );
+            $setid = $this->set($topicid, $sname, $settings);
+            if (!empty($explicit[$key]) && empty($applied[$setid])) {
+                // The file says how this set works: also update a set that already existed.
+                $update = array_intersect_key($settings, array_flip(['gated', 'answermode', 'options', 'numoptions',
+                    'instruction']));
+                $DB->update_record('vocabmastery_set', (object)(['id' => $setid, 'timemodified' => time()] + $update));
+                $applied[$setid] = true;
+            }
             $item = $r;
             if (!empty($r['source'])) {
                 $item['metadata'] = ['source' => $r['source']];
             }
             unset($item['level'], $item['topic'], $item['set'], $item['source']);
+            foreach (table_parser::SET_FIELDS as $f) {
+                unset($item[$f]);
+            }
             $this->item($setid, $item);
         }
+        $this->finish_replace();
         $transaction->allow_commit();
+        content::queue_recompute((int)$this->instance->vm->id);
         $this->instance->reset_cache();
         $this->log();
         return $this->stats;
+    }
+
+    /**
+     * Replace mode: delete the words of replaced sets that the import did not contain.
+     */
+    protected function finish_replace(): void {
+        foreach ($this->replaced as $setid => $before) {
+            $gone = array_values(array_diff($before, array_keys($this->kept[$setid] ?? [])));
+            content::delete_items($gone);
+            $this->stats['deleted'] += count($gone);
+        }
+        $this->replaced = $this->kept = [];
+    }
+
+    /**
+     * Apply set columns from an imported file on top of the derived set settings.
+     *
+     * @param array $settings derived settings
+     * @param array $explicit gated / answermode / instruction from the file
+     * @param array $values distinct answers in the set
+     * @return array
+     */
+    public static function apply_set_columns(array $settings, array $explicit, array $values): array {
+        if (isset($explicit['gated'])) {
+            $settings['gated'] = (int)(bool)$explicit['gated'];
+        }
+        if (isset($explicit['instruction'])) {
+            $settings['instruction'] = \core_text::substr(trim($explicit['instruction']), 0, 255);
+        }
+        $mode = $explicit['answermode'] ?? null;
+        if ($mode === 'pool') {
+            $settings['answermode'] = 'pool';
+            $settings['options'] = '';
+            $settings['numoptions'] = 4;
+        } else if ($mode === 'fixed' && $settings['answermode'] !== 'fixed') {
+            $settings['answermode'] = 'fixed';
+            $settings['options'] = implode("\n", $values);
+            $settings['numoptions'] = count($values);
+        }
+        return $settings;
     }
 
     /**

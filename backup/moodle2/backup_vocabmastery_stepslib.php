@@ -64,6 +64,9 @@ class backup_vocabmastery_activity_structure_step extends backup_activity_struct
         $responses = new backup_nested_element('responses');
         $response = new backup_nested_element('response', ['id'], ['userid', 'itemid', 'mode', 'response', 'correct',
             'hinted', 'responsetime', 'timecreated']);
+        $flags = new backup_nested_element('flags');
+        $flag = new backup_nested_element('flag', ['id'], ['itemid', 'userid', 'reason', 'commenttext', 'resolved',
+            'timecreated', 'timemodified']);
 
         $vm->add_child($levels);
         $levels->add_child($level);
@@ -81,6 +84,8 @@ class backup_vocabmastery_activity_structure_step extends backup_activity_struct
         $attempts->add_child($attempt);
         $attempt->add_child($responses);
         $responses->add_child($response);
+        $vm->add_child($flags);
+        $flags->add_child($flag);
 
         $vm->set_source_table('vocabmastery', ['id' => backup::VAR_ACTIVITYID]);
         $level->set_source_table('vocabmastery_level', ['vocabmasteryid' => backup::VAR_PARENTID], 'sortorder ASC, id ASC');
@@ -92,11 +97,13 @@ class backup_vocabmastery_activity_structure_step extends backup_activity_struct
             $itemstate->set_source_table('vocabmastery_itemstate', ['vocabmasteryid' => backup::VAR_PARENTID]);
             $attempt->set_source_table('vocabmastery_attempt', ['vocabmasteryid' => backup::VAR_PARENTID], 'id ASC');
             $response->set_source_table('vocabmastery_response', ['attemptid' => backup::VAR_PARENTID], 'id ASC');
+            $flag->set_source_table('vocabmastery_flag', ['vocabmasteryid' => backup::VAR_PARENTID], 'id ASC');
         }
         $topicstate->annotate_ids('user', 'userid');
         $itemstate->annotate_ids('user', 'userid');
         $attempt->annotate_ids('user', 'userid');
         $response->annotate_ids('user', 'userid');
+        $flag->annotate_ids('user', 'userid');
         $vm->annotate_files('mod_vocabmastery', 'intro', null);
 
         return $this->prepare_activity_structure($vm);

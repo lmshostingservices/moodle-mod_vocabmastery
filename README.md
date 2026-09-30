@@ -4,9 +4,9 @@ A Moodle activity for vocabulary that has to be memorised rather than derived fr
 
 Nothing language-specific is hard-coded. German der/die/das, A1/A2/B1 and lesson names are **content**, not code.
 
-- Component: `mod_vocabmastery`, version 0.9.4 (stable)
+- Component: `mod_vocabmastery`, version 1.0.0 (stable)
 - Target: Moodle 4.4 – 5.2 (`requires` 2024042200, `supported` [404, 502]). Runtime-tested on Moodle 5.0.10 / PHP 8.4 /
-  PostgreSQL 16 (full) and Moodle 4.4.12 / PHP 8.3 (install, Excel import, PHPUnit); the other versions are covered by the CI matrix in `.github/workflows/ci.yml` (repository only, not in the ZIP).
+  PostgreSQL 16 (full), Moodle 4.4.12 / PHP 8.3 (upgrade, PHPUnit) and Moodle 5.2.3 (upgrade, PHPUnit, Behat); the other versions are covered by the CI matrix in `.github/workflows/ci.yml` (repository only, not in the ZIP).
 - Moodle code checker (moodle-cs): 0 errors, 0 warnings. PHPDoc checker (local_moodlecheck): 0 errors. Grunt (ESLint,
   stylelint, AMD build): clean.
 
@@ -40,7 +40,7 @@ Verified on the 34 supplied lesson files (A1 1–12, A2 1–12, B1 1–9, 12). R
 
 **Excel / CSV / paste**: paste from Word or Excel, or upload .csv/.xlsx/.ods. Columns are auto-detected (header names, or the column holding a few short repeated values is taken as the answer column). The teacher can change the mapping and see a validated preview before importing. Optional `level`, `topic` and `set` columns let one sheet build a whole course. **Export CSV** on the manage page produces a file in this same format, so content can go out and back in.
 
-The Excel / CSV / paste tab has step-by-step instructions, a column reference, **Download sample Excel file** / **sample CSV** (columns `level, topic, set, answer, prompt, translation, plural, alternatives, hint, core`), and a **ChatGPT prompt** with a Copy button and a .txt download. The prompt tells ChatGPT to convert a pasted or attached word list into exactly that table (articles for nouns, preposition + case for verb + preposition, English meaning for verbs, no invented words, umlauts kept, core 1/0) and to list anything uncertain under "Check:". Nothing is sent to ChatGPT by Moodle; the teacher pastes the prompt themselves and checks the result in the import preview.
+The Excel / CSV / paste tab has step-by-step instructions, a column reference, **Download sample Excel file** / **sample CSV** (columns `level, topic, set, answer, prompt, translation, plural, alternatives, hint, core`; optional set columns `gated`, `answer mode` (fixed/pool) and `instruction`), and a **ChatGPT prompt** with a Copy button and a .txt download. The prompt tells ChatGPT to convert a pasted or attached word list into exactly that table (articles for nouns, preposition + case for verb + preposition, English meaning for verbs, no invented words, umlauts kept, core 1/0) and to list anything uncertain under "Check:". Nothing is sent to ChatGPT by Moodle; the teacher pastes the prompt themselves and checks the result in the import preview.
 
 **Manual**: the manage page has levels, topics and sets, with reordering. Each set has a bulk item table: inline edits, add rows, search, and select many rows to delete, duplicate, move to another set, or mark core/optional.
 
@@ -53,7 +53,9 @@ The Excel / CSV / paste tab has step-by-step instructions, a column reference, *
 - **Blitz** (timed, default 60 s) and **Streak** (until the first mistake): these track personal bests and by default do **not** count towards mastery.
 - **Difficult words**: for a topic, or across the whole activity.
 - **Mastery check**: no feedback and no hints until the end. The correct answers are never sent to the browser. After a failed check, the missed items are always included in the next one, and the result screen offers "Practise these N".
-- **Keyboard**: 1–9 answer, Enter continue, Space reveal, Esc exit. The layout is mobile-first, with ARIA live feedback, visible focus, correct/wrong shown by more than colour, and reduced-motion support. Clean light "SaaS" design by default (line icons, progress rings, cards); a dark scheme is available per activity.
+- **Results**: every session ends with a results screen. It shows a score ring, time taken, comparison with last time, a right/wrong tile per word, strengths and weak sets, one recommended next step, and a full answer review.
+- **Report a problem**: learners can flag a word (wrong answer, spelling, translation or other). Teachers see open reports on the set's word table and mark them as fixed.
+- **Keyboard**: 1–9 answer, Enter continue, Space reveal, Esc exit. The layout is mobile-first, with ARIA live feedback, visible focus, correct/wrong shown by more than colour, and reduced-motion support. Clean light design by default in its own "Harbour & Coral" palette (navy brand, coral highlight, green/red only for right and wrong), with a matching dark scheme per activity.
 
 ## Mastery and progression rules (all configurable)
 
@@ -110,19 +112,21 @@ There are no metered or AI charges: no AI generation, speech or AI-provider call
 - **Gradebook**: % of topics passed, or the average of best mastery-check scores. Point and scale grades are both supported.
 - **Completion**: view; pass N topics; pass all topics; reach X% overall progress.
 - **Events**: module viewed, instance list viewed, topic passed, session completed, content imported.
+- **Background tasks**: a scheduled task finishes sessions left open for more than a day; an ad-hoc task recalculates progress, grades and completion after teachers change words.
 - **Other**: backup/restore (content plus optional user data, with ids remapped), Privacy API (metadata, export, delete), course reset, and web services (`mod_vocabmastery_start_session`, `_record_response`, `_finish_session`; AJAX- and mobile-service enabled).
 - **Server-side checking**: every answer is re-checked and stored on the server (`vocabmastery_response`), including response time, which gives the data needed for spaced repetition later.
 
-## Not in this MVP (planned)
+## Not in 1.0 (planned)
 
 - Matching mode (value-based so identical answers are interchangeable; the engine already compares by value).
 - Spaced review (due intervals 1/3/7/14/30 days).
 - Audio per item and optional TTS.
-- A scheduled cleanup of abandoned empty sessions.
+- A print view and per-set progress in teacher reports.
 
 ## Tests
 
-`vendor/bin/phpunit -c mod/vocabmastery` (after `admin/tool/phpunit/cli/util.php --buildcomponentconfigs`): 25 tests. The
+`vendor/bin/phpunit -c mod/vocabmastery` (after `admin/tool/phpunit/cli/util.php --buildcomponentconfigs`): 82 tests. Behat features in `tests/behat` cover learner practice (with axe
+accessibility checks) and separate-groups reporting. The
 Central Config cases run only where `local_aiconfig` is installed; the "not installed" case runs only where it is not.
 
 ## Third-party
@@ -131,4 +135,4 @@ Icon paths from Lucide (ISC; Feather-derived icons MIT). Full notice: `LICENSE-L
 
 ## Database tables
 
-`vocabmastery`, `_level`, `_topic`, `_set`, `_item`, `_attempt`, `_response`, `_itemstate`, `_topicstate`.
+`vocabmastery`, `_level`, `_topic`, `_set`, `_item`, `_attempt`, `_response`, `_itemstate`, `_topicstate`, `_flag` (learners' word reports).

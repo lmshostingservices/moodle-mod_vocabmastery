@@ -56,4 +56,23 @@ class mod_vocabmastery_generator extends testing_module_generator {
         }
         return ['levelid' => $levelid, 'topicid' => $topicid, 'setid' => $setid, 'itemids' => $itemids];
     }
+
+    /**
+     * Create one word, creating its level, topic and set by name when needed (used by Behat).
+     *
+     * @param array $data vocabmasteryid, level, topic, set, prompt, answer, options (set buttons, "/"-separated)
+     * @return int item id
+     */
+    public function create_word(array $data): int {
+        $vmid = (int)$data['vocabmasteryid'];
+        $levelid = \mod_vocabmastery\content::level_by_name($vmid, $data['level'] ?? 'A1');
+        $topicid = \mod_vocabmastery\content::topic_by_name($vmid, $levelid, $data['topic']);
+        $options = str_replace('/', "\n", $data['options'] ?? 'der/die/das');
+        $setid = \mod_vocabmastery\content::set_by_name($vmid, $topicid, $data['set'] ?? 'Nomen + Artikel', [
+            'itemtype' => 'choice', 'answermode' => 'fixed', 'options' => $options,
+            'numoptions' => count(explode("\n", $options)), 'gated' => 1,
+        ]);
+        return \mod_vocabmastery\content::add_item($vmid, $setid, ['prompt' => $data['prompt'],
+            'correctvalue' => $data['answer'], 'translation' => $data['translation'] ?? '']);
+    }
 }

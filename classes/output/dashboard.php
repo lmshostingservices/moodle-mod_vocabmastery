@@ -95,24 +95,28 @@ class dashboard implements renderable, templatable {
             $topics = [];
             $sum = 0;
             $passed = 0;
+            $countable = 0;
             foreach ($this->instance->get_level_topics((int)$level->id) as $t) {
                 $s = $summaries[(int)$t->id];
                 $card = self::topic_card($this->instance, $t, $s);
                 $card['pathkey'] = $keys[(int)$t->id];
                 $matrixcols[$card['pathkey']] = true;
                 $topics[] = $card;
-                $sum += $s->passed ? 100 : min(99, $s->mastery);
-                $passed += $s->passed ? 1 : 0;
+                if (!$s->empty) {
+                    $countable++;
+                    $sum += $s->passed ? 100 : min(99, $s->mastery);
+                    $passed += $s->passed ? 1 : 0;
+                }
             }
-            $percent = $topics ? (int)round($sum / count($topics)) : 0;
+            $percent = $countable ? (int)round($sum / $countable) : 0;
             $levels[] = [
                 'id' => (int)$level->id,
                 'name' => format_string($level->name),
                 'description' => format_string((string)$level->description),
                 'percent' => $percent,
                 'passedcount' => $passed,
-                'topiccount' => count($topics),
-                'complete' => $topics && $passed === count($topics),
+                'topiccount' => $countable,
+                'complete' => $countable && $passed === $countable,
                 'topics' => $topics,
                 'hastopics' => (bool)$topics,
             ];
@@ -157,7 +161,7 @@ class dashboard implements renderable, templatable {
             'accuracy' => $r->attempts ? (int)round($r->correct / $r->attempts * 100) : 0,
         ], array_slice($difficult, 0, 6));
 
-        $total = count($summaries);
+        $total = count($this->progress->countable_summaries());
         $counts = \mod_vocabmastery\content::counts((int)$vm->id);
         return [
             'cmid' => (int)$this->instance->cm->id,

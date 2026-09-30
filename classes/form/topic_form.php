@@ -42,6 +42,7 @@ class topic_form extends \moodleform {
         $m->setType('action', PARAM_ALPHA);
         $m->addElement('select', 'levelid', get_string('level', 'mod_vocabmastery'), $levels);
         $m->addElement('text', 'name', get_string('topicname', 'mod_vocabmastery'), ['size' => 50]);
+        $m->addHelpButton('name', 'topicname', 'mod_vocabmastery');
         $m->setType('name', PARAM_TEXT);
         $m->addRule('name', null, 'required', null, 'client');
         $m->addElement('text', 'pathkey', get_string('pathkey', 'mod_vocabmastery'), ['size' => 4]);
@@ -54,6 +55,7 @@ class topic_form extends \moodleform {
             ['rows' => 2, 'cols' => 60]
         );
         $m->setType('description', PARAM_TEXT);
+        $m->addHelpButton('description', 'topicdescription', 'mod_vocabmastery');
         $m->addElement(
             'textarea',
             'teachernotes',
@@ -61,6 +63,7 @@ class topic_form extends \moodleform {
             ['rows' => 4, 'cols' => 60]
         );
         $m->setType('teachernotes', PARAM_TEXT);
+        $m->addHelpButton('teachernotes', 'teachernotes', 'mod_vocabmastery');
         $this->add_action_buttons();
     }
 }

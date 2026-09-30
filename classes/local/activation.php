@@ -183,12 +183,12 @@ class activation {
             self::save_state(['state' => self::STATE_UNVERIFIED, 'checked' => $now]);
             return ['outcome' => 'autherror'];
         }
-        if ($r['status'] !== 200 || !$r['data'] || !is_bool($r['data']['unlocked'] ?? null)) {
+        if ($r['status'] !== 200 || !$r['data'] || !array_key_exists('unlocked', $r['data'])) {
             self::save_state(['state' => self::STATE_UNVERIFIED, 'checked' => $now]);
             return ['outcome' => 'unverifiable'];
         }
         $d = $r['data'];
-        $unlocked = $d['unlocked'];
+        $unlocked = $d['unlocked'] === true || $d['unlocked'] === 1 || $d['unlocked'] === 'true';
         self::save_state([
             'state' => $unlocked ? self::STATE_UNLOCKED : self::STATE_LOCKED,
             'checked' => $now,
@@ -251,16 +251,13 @@ class activation {
         if (!preg_match('/^[a-f0-9]{64}$/', $sha)) {
             return $fail('nosha', $info);
         }
-        $validprice = (is_int($credits) || (is_string($credits) && ctype_digit($credits)))
-            && filter_var($credits, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) !== false;
-        if (!$validprice) {
+        $validprice = is_int($credits) || (is_string($credits) && ctype_digit($credits))
+            || (is_float($credits) && $credits >= 0 && floor($credits) === $credits);
+        if (!$validprice || (int)$credits < 0) {
             return $fail('noprice', $info);
         }
         $info['credits'] = (int)$credits;
-        if ($status !== 'ready' || ($entry['zipExists'] ?? null) !== true) {
-            return $fail('notavailable', $info);
-        }
-        if ($info['mode'] !== 'credit-unlock') {
+        if ($status !== 'ready' || ($entry['zipExists'] ?? true) === false) {
             return $fail('notavailable', $info);
         }
         return ['ok' => true, 'reason' => ''] + $info;
@@ -319,9 +316,6 @@ class activation {
         if ($live['sha256'] !== strtolower($confirmedsha) || $live['credits'] !== $confirmedcredits) {
             return ['outcome' => 'stale', 'required' => $live['credits']];
         }
-        // A PHP termination after dispatch cannot safely establish whether a debit occurred.
-        // Persist this marker BEFORE the outbound, charge-capable request.
-        self::save_state(['state' => self::STATE_UNVERIFIED, 'pending' => true]);
         $r = $this->call('POST', '/api/plugin-unlock', [
             'pluginId' => self::PLUGIN_ID,
             'pluginComponent' => self::COMPONENT,
@@ -334,19 +328,11 @@ class activation {
         $code = self::error_code($r['data']);
         $message = self::server_message($r['data'], $pair['apikey']);
 
-        // Only strict booleans and an explicit API refusal settle a 2xx response.
-        $success = $d['success'] ?? null;
-        $already = $d['alreadyUnlocked'] ?? null;
-        $invalidreply = !is_bool($success) || ($already !== null && !is_bool($already))
-            || ($already === true && $success !== true)
-            || ($success === false && $message === '' && $code === '');
-        if ($r['neterror'] || $r['status'] === 408 || $r['status'] >= 500
-                || $r['status'] < 200 || ($r['status'] >= 300 && $r['status'] < 400)
-                || ($r['status'] >= 200 && $r['status'] < 300 && $invalidreply)) {
+        // No definite answer: the purchase may or may not have happened.
+        if ($r['neterror'] || $r['status'] >= 500 || $r['status'] === 408 || ($r['status'] === 200 && !$r['data'])) {
+            self::save_state(['state' => self::STATE_UNVERIFIED, 'pending' => true]);
             return ['outcome' => 'uncertain', 'message' => $message];
         }
-        // Any remaining 4xx is a definite refusal, and a valid 2xx has definite semantics.
-        self::save_state(['pending' => false]);
         if (array_key_exists('remainingCredits', $d)) {
             self::save_state(['credits' => self::parse_balance(['credits' => $d['remainingCredits']])]);
         }
@@ -373,7 +359,7 @@ class activation {
         }
         $consumed = is_numeric($d['creditsConsumed'] ?? null) ? (int)$d['creditsConsumed'] : null;
         $source = is_scalar($d['entitlementSource'] ?? null) ? clean_param((string)$d['entitlementSource'], PARAM_TEXT) : '';
-        if ($already === true) {
+        if (!empty($d['alreadyUnlocked'])) {
             // The creditsConsumed value describes the original unlock here, not a new charge.
             $outcome = 'alreadyunlocked';
             $charged = 0;

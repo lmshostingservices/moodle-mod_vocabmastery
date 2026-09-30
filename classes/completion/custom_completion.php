@@ -41,7 +41,7 @@ class custom_completion extends activity_custom_completion {
         $this->validate_rule($rule);
         $vm = $DB->get_record('vocabmastery', ['id' => $this->cm->instance], '*', MUST_EXIST);
         $progress = new progress(new instance($vm, $this->cm), $this->userid);
-        $summaries = $progress->get_summaries();
+        $summaries = $progress->countable_summaries();
         switch ($rule) {
             case 'completiontopics':
                 $ok = $progress->topics_passed() >= (int)$vm->completiontopics;

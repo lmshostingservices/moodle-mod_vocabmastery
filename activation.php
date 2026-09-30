@@ -70,9 +70,10 @@ if ($action !== '') {
                 redirect($url, $msg, null, $type);
             }
             $state = activation::get_state();
-            // A low balance may still be a paid Marketplace or LMS Labs purchase restored at zero credits.
-            $lowbalance = $state['credits'] !== '' && $state['credits'] !== 'unlimited'
-                && (int)$state['credits'] < $live['credits'];
+            if ($state['credits'] !== '' && $state['credits'] !== 'unlimited' && (int)$state['credits'] < $live['credits']) {
+                [$msg, $type] = activation::message(['outcome' => 'insufficient', 'required' => $live['credits']]);
+                redirect($url, $msg, null, $type);
+            }
             echo $OUTPUT->header();
             echo $OUTPUT->render_from_template('mod_vocabmastery/activation_confirm', [
                 'actionurl' => $url->out(false),
@@ -83,7 +84,6 @@ if ($action !== '') {
                 'releaseshort' => substr($live['sha256'], 0, 12),
                 'balance' => $state['credits'] === 'unlimited' ? get_string('act_unlimited', $c) : $state['credits'],
                 'hasbalance' => $state['credits'] !== '',
-                'lowbalance' => $lowbalance,
             ]);
             echo $OUTPUT->footer();
             die;

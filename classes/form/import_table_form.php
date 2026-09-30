@@ -45,6 +45,7 @@ class import_table_form extends \moodleform {
             ['rows' => 10, 'cols' => 80, 'class' => 'text-monospace', 'placeholder' => "der\tVater\tfather\ndie\tMutter\tmother"]
         );
         $m->setType('pasted', PARAM_TEXT);
+        $m->addHelpButton('pasted', 'pastetable', 'mod_vocabmastery');
         $m->addElement(
             'filepicker',
             'tablefile',
@@ -52,6 +53,7 @@ class import_table_form extends \moodleform {
             null,
             ['accepted_types' => ['.csv', '.txt', '.tsv', '.xlsx', '.xls', '.ods']]
         );
+        $m->addHelpButton('tablefile', 'orupload', 'mod_vocabmastery');
         $this->add_action_buttons(true, get_string('analyse', 'mod_vocabmastery'));
     }
 }

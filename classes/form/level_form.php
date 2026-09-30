@@ -43,7 +43,8 @@ class level_form extends \moodleform {
         $m->setType('name', PARAM_TEXT);
         $m->addRule('name', null, 'required', null, 'client');
         $m->addHelpButton('name', 'levelname', 'mod_vocabmastery');
-        $m->addElement('textarea', 'description', get_string('description'), ['rows' => 2, 'cols' => 60]);
+        $m->addElement('textarea', 'description', get_string('leveldescription', 'mod_vocabmastery'), ['rows' => 2, 'cols' => 60]);
+        $m->addHelpButton('description', 'leveldescription', 'mod_vocabmastery');
         $m->setType('description', PARAM_TEXT);
         $this->add_action_buttons();
     }
