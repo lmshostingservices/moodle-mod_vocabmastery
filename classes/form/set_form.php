@@ -48,15 +48,25 @@ class set_form extends \moodleform {
         $m->addElement('text', 'instruction', get_string('instruction', $c), ['size' => 50]);
         $m->setType('instruction', PARAM_TEXT);
         $m->addHelpButton('instruction', 'instruction', $c);
-        $m->addElement('select', 'itemtype', get_string('itemtype', $c), [
-            'choice' => get_string('itemtype_choice', $c),
-            'typed' => get_string('itemtype_typed', $c),
-        ]);
+        $m->addElement(
+            'select',
+            'itemtype',
+            get_string('itemtype', $c),
+            [
+                'choice' => get_string('itemtype_choice', $c),
+                'typed' => get_string('itemtype_typed', $c),
+            ]
+        );
         $m->addHelpButton('itemtype', 'itemtype', $c);
-        $m->addElement('select', 'answermode', get_string('answermode', $c), [
-            'fixed' => get_string('answermode_fixed', $c),
-            'pool' => get_string('answermode_pool', $c),
-        ]);
+        $m->addElement(
+            'select',
+            'answermode',
+            get_string('answermode', $c),
+            [
+                'fixed' => get_string('answermode_fixed', $c),
+                'pool' => get_string('answermode_pool', $c),
+            ]
+        );
         $m->addHelpButton('answermode', 'answermode', $c);
         $m->hideIf('answermode', 'itemtype', 'eq', 'typed');
         $m->addElement('textarea', 'options', get_string('fixedoptions', $c), ['rows' => 4, 'cols' => 30]);

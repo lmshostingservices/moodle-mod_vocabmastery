@@ -294,8 +294,11 @@ class engine {
         } else if ($itemids) {
             $pool = array_filter($rows, fn($r) => in_array((int)$r->id, $itemids, true));
         } else if ($mode === 'difficult') {
-            $pool = array_filter($rows, fn($r) => $r->difficult
-                && (!$setid || (int)$r->setid === $setid) && (!$topicid || (int)$r->topicid === $topicid));
+            $pool = array_filter(
+                $rows,
+                fn($r) => $r->difficult
+                    && (!$setid || (int)$r->setid === $setid) && (!$topicid || (int)$r->topicid === $topicid)
+            );
         } else if ($setid) {
             $pool = array_filter($rows, fn($r) => (int)$r->setid === $setid);
         } else {
@@ -329,8 +332,15 @@ class engine {
         if ($mode === 'test') {
             // Only one mastery check per topic can be open. An earlier unfinished one is scored as it stands.
             // Unanswered words count as wrong.
-            $open = $DB->get_records('vocabmastery_attempt', ['vocabmasteryid' => $vm->id, 'userid' => $this->userid,
-                'topicid' => $topicid, 'mode' => 'test', 'finished' => 0], '', 'id');
+            $open = $DB->get_records(
+                'vocabmastery_attempt',
+                [
+                    'vocabmasteryid' => $vm->id, 'userid' => $this->userid,
+                    'topicid' => $topicid, 'mode' => 'test', 'finished' => 0,
+                ],
+                '',
+                'id'
+            );
             foreach ($open as $old) {
                 try {
                     $this->finish((int)$old->id);
@@ -385,8 +395,17 @@ class engine {
             return $list;
         }
         $missed = [];
-        $last = $DB->get_records('vocabmastery_attempt', ['userid' => $this->userid, 'topicid' => $topicid,
-            'mode' => 'test', 'finished' => 1], 'timefinish DESC', 'id, passed', 0, 1);
+        $last = $DB->get_records(
+            'vocabmastery_attempt',
+            [
+                'userid' => $this->userid, 'topicid' => $topicid,
+                'mode' => 'test', 'finished' => 1,
+            ],
+            'timefinish DESC',
+            'id, passed',
+            0,
+            1
+        );
         if ($last && !reset($last)->passed) {
             $lastid = reset($last)->id;
             $missed = $DB->get_fieldset_select(
@@ -425,18 +444,21 @@ class engine {
             $wanted[$signature($sets[$r->setid])] = true;
         }
         $summaries = $this->progress->get_summaries();
-        $cands = array_filter($this->progress->get_item_rows(), function ($r) use (
-            $inthis,
-            $sets,
-            $signature,
-            $wanted,
-            $summaries
-) {
-            return ($r->difficult || ($r->wasdifficult && !$r->mastered))
-                && !in_array((int)$r->id, $inthis, true)
-                && !empty($summaries[(int)$r->topicid]->unlocked)
-                && isset($wanted[$signature($sets[$r->setid])]);
-        });
+        $cands = array_filter(
+            $this->progress->get_item_rows(),
+            function ($r) use (
+                $inthis,
+                $sets,
+                $signature,
+                $wanted,
+                $summaries
+            ) {
+                return ($r->difficult || ($r->wasdifficult && !$r->mastered))
+                    && !in_array((int)$r->id, $inthis, true)
+                    && !empty($summaries[(int)$r->topicid]->unlocked)
+                    && isset($wanted[$signature($sets[$r->setid])]);
+            }
+        );
         $cands = self::weighted_order($cands);
         return $this->export_questions(array_slice($cands, 0, 15), false);
     }
@@ -601,24 +623,32 @@ class engine {
             ['attemptid' => $attemptid, 'itemid' => $itemid, 'correct' => 1]
         );
         $now = time();
-        $DB->insert_record('vocabmastery_response', (object)[
-            'attemptid' => $attemptid,
-            'vocabmasteryid' => $this->instance->vm->id,
-            'userid' => $this->userid,
-            'itemid' => $itemid,
-            'mode' => $mode,
-            'response' => \core_text::substr($response, 0, 255),
-            'correct' => $correct ? 1 : 0,
-            'hinted' => $hinted ? 1 : 0,
-            'responsetime' => max(0, min($responsetime, 3600000)),
-            'timecreated' => $now,
-        ]);
+        $DB->insert_record(
+            'vocabmastery_response',
+            (object)[
+                'attemptid' => $attemptid,
+                'vocabmasteryid' => $this->instance->vm->id,
+                'userid' => $this->userid,
+                'itemid' => $itemid,
+                'mode' => $mode,
+                'response' => \core_text::substr($response, 0, 255),
+                'correct' => $correct ? 1 : 0,
+                'hinted' => $hinted ? 1 : 0,
+                'responsetime' => max(0, min($responsetime, 3600000)),
+                'timecreated' => $now,
+            ]
+        );
         $attempt->total++;
         if ($correct) {
             $attempt->correct++;
         }
-        $DB->update_record('vocabmastery_attempt', (object)['id' => $attempt->id, 'total' => $attempt->total,
-            'correct' => $attempt->correct]);
+        $DB->update_record(
+            'vocabmastery_attempt',
+            (object)[
+                'id' => $attempt->id, 'total' => $attempt->total,
+                'correct' => $attempt->correct,
+            ]
+        );
 
         $counts = in_array($mode, ['practice', 'difficult', 'test'], true)
             || (in_array($mode, ['blitz', 'streak'], true) && $this->instance->vm->blitzcountsmastery);
@@ -668,9 +698,11 @@ class engine {
         $vm = $this->instance->vm;
         $st = $DB->get_record('vocabmastery_itemstate', ['userid' => $this->userid, 'itemid' => $itemid]);
         if (!$st) {
-            $st = (object)['vocabmasteryid' => $vm->id, 'userid' => $this->userid, 'itemid' => $itemid,
+            $st = (object)[
+                'vocabmasteryid' => $vm->id, 'userid' => $this->userid, 'itemid' => $itemid,
                 'attempts' => 0, 'correct' => 0, 'wrong' => 0, 'streak' => 0, 'mastered' => 0,
-                'difficult' => 0, 'wasdifficult' => 0, 'lastseen' => 0];
+                'difficult' => 0, 'wasdifficult' => 0, 'lastseen' => 0,
+            ];
             try {
                 $st->id = $DB->insert_record('vocabmastery_itemstate', $st);
             } catch (\dml_write_exception $e) {
@@ -768,8 +800,10 @@ class engine {
                 "SELECT MAX($field) FROM {vocabmastery_attempt}
                 WHERE userid = :userid AND vocabmasteryid = :vid AND mode = :mode AND setid = :setid
                    AND topicid = :topicid AND finished = 1",
-                ['userid' => $this->userid, 'vid' => $vm->id, 'mode' => $mode, 'setid' => $attempt->setid,
-                    'topicid' => $topicid]
+                [
+                    'userid' => $this->userid, 'vid' => $vm->id, 'mode' => $mode, 'setid' => $attempt->setid,
+                    'topicid' => $topicid,
+                ]
             );
         }
 
@@ -787,34 +821,44 @@ class engine {
             $result = $this->progress->recompute_topic($topicid);
         } else {
             // Activity-wide difficult session: recompute touched topics.
-            $touched = $DB->get_fieldset_sql("SELECT DISTINCT s.topicid
-                  FROM {vocabmastery_response} r
-                  JOIN {vocabmastery_item} i ON i.id = r.itemid
-                  JOIN {vocabmastery_set} s ON s.id = i.setid
-                 WHERE r.attemptid = :attemptid", ['attemptid' => $attemptid]);
+            $touched = $DB->get_fieldset_sql(
+                "SELECT DISTINCT s.topicid
+                      FROM {vocabmastery_response} r
+                      JOIN {vocabmastery_item} i ON i.id = r.itemid
+                      JOIN {vocabmastery_set} s ON s.id = i.setid
+                     WHERE r.attemptid = :attemptid",
+                ['attemptid' => $attemptid]
+            );
             foreach ($touched as $tid) {
                 $r = $this->progress->recompute_topic((int)$tid);
                 $result['newlypassed'] = $result['newlypassed'] || $r['newlypassed'];
             }
         }
 
-        $DB->update_record('vocabmastery_attempt', (object)[
-            'id' => $attemptid, 'total' => $total, 'correct' => $correct, 'beststreak' => $beststreak,
-            'score' => $score, 'passed' => $passed, 'finished' => 1, 'timefinish' => time(),
-        ]);
+        $DB->update_record(
+            'vocabmastery_attempt',
+            (object)[
+                'id' => $attemptid, 'total' => $total, 'correct' => $correct, 'beststreak' => $beststreak,
+                'score' => $score, 'passed' => $passed, 'finished' => 1, 'timefinish' => time(),
+            ]
+        );
 
-        $event = event\session_completed::create([
-            'objectid' => $attemptid,
-            'context' => $this->instance->context,
-            'other' => ['mode' => $mode, 'score' => $score, 'topicid' => $topicid],
-        ]);
+        $event = event\session_completed::create(
+            [
+                'objectid' => $attemptid,
+                'context' => $this->instance->context,
+                'other' => ['mode' => $mode, 'score' => $score, 'topicid' => $topicid],
+            ]
+        );
         $event->trigger();
 
         // Mistakes list.
-        $wrongids = array_unique(array_map(
-            fn($r) => (int)$r->itemid,
-            array_filter($responses, fn($r) => !$r->correct)
-        ));
+        $wrongids = array_unique(
+            array_map(
+                fn($r) => (int)$r->itemid,
+                array_filter($responses, fn($r) => !$r->correct)
+            )
+        );
         if ($mode === 'test') {
             $answered = array_map(fn($r) => (int)$r->itemid, $responses);
             foreach (array_filter(array_map('intval', explode(',', (string)$attempt->itemids))) as $id) {
@@ -827,8 +871,10 @@ class engine {
         if ($wrongids && $mode !== 'learn') {
             $items = $DB->get_records_list('vocabmastery_item', 'id', $wrongids);
             foreach ($items as $it) {
-                $mistakes[] = ['itemid' => (int)$it->id, 'prompt' => $it->prompt, 'correct' => $it->correctvalue,
-                    'translation' => (string)$it->translation];
+                $mistakes[] = [
+                    'itemid' => (int)$it->id, 'prompt' => $it->prompt, 'correct' => $it->correctvalue,
+                    'translation' => (string)$it->translation,
+                ];
             }
         }
 
@@ -861,10 +907,14 @@ class engine {
             }
             $order = array_keys($first);
             if ($mode === 'test') {
-                $order = array_values(array_unique(array_merge(
-                    array_filter(array_map('intval', explode(',', (string)$attempt->itemids))),
-                    $order
-                )));
+                $order = array_values(
+                    array_unique(
+                        array_merge(
+                            array_filter(array_map('intval', explode(',', (string)$attempt->itemids))),
+                            $order
+                        )
+                    )
+                );
             }
             $order = array_slice($order, 0, 200);
             $items = $order ? $DB->get_records_list('vocabmastery_item', 'id', $order) : [];
@@ -907,8 +957,10 @@ class engine {
             'vocabmastery_attempt',
             'userid = :userid AND vocabmasteryid = :vid AND mode = :mode AND topicid = :topicid AND setid = :setid
                 AND finished = 1 AND id <> :id',
-            ['userid' => $this->userid, 'vid' => $vm->id, 'mode' => $mode, 'topicid' => $topicid,
-                'setid' => (int)$attempt->setid, 'id' => $attemptid],
+            [
+                'userid' => $this->userid, 'vid' => $vm->id, 'mode' => $mode, 'topicid' => $topicid,
+                'setid' => (int)$attempt->setid, 'id' => $attemptid,
+            ],
             'timefinish DESC, id DESC',
             'id, score',
             0,
@@ -918,6 +970,14 @@ class engine {
 
         $isbest = in_array($mode, ['blitz', 'streak'], true)
             && ($mode === 'blitz' ? $correct : $beststreak) > $previousbest && $total > 0;
+
+        // The teacher can hide which words were right or wrong in a mastery check.
+        // Learners then cannot copy the answers into the next attempt; only the score and set totals are sent.
+        $answershidden = $mode === 'test' && ($vm->testreview ?? 'show') === 'hide';
+        if ($answershidden) {
+            $mistakes = [];
+            $answers = [];
+        }
 
         return [
             'mode' => $mode,
@@ -939,6 +999,7 @@ class engine {
             'previousscore' => $previousscore,
             'answers' => $answers,
             'sets' => array_values($setstats),
+            'answershidden' => $answershidden,
         ];
     }
 

@@ -37,14 +37,16 @@ class record_response extends external_api {
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
-        return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module id'),
-            'attemptid' => new external_value(PARAM_INT, 'Attempt id'),
-            'itemid' => new external_value(PARAM_INT, 'Item id'),
-            'response' => new external_value(PARAM_TEXT, 'Answer given'),
-            'responsetime' => new external_value(PARAM_INT, 'Milliseconds taken', VALUE_DEFAULT, 0),
-            'hinted' => new external_value(PARAM_BOOL, 'Hint was used', VALUE_DEFAULT, false),
-        ]);
+        return new external_function_parameters(
+            [
+                'cmid' => new external_value(PARAM_INT, 'Course module id'),
+                'attemptid' => new external_value(PARAM_INT, 'Attempt id'),
+                'itemid' => new external_value(PARAM_INT, 'Item id'),
+                'response' => new external_value(PARAM_TEXT, 'Answer given'),
+                'responsetime' => new external_value(PARAM_INT, 'Milliseconds taken', VALUE_DEFAULT, 0),
+                'hinted' => new external_value(PARAM_BOOL, 'Hint was used', VALUE_DEFAULT, false),
+            ]
+        );
     }
 
     /**
@@ -91,11 +93,13 @@ class record_response extends external_api {
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
-        return new external_single_structure([
-            'correct' => new external_value(PARAM_BOOL, 'Was correct (always false in mastery checks)'),
-            'recorded' => new external_value(PARAM_BOOL, 'Stored'),
-            'state' => new external_value(PARAM_ALPHA, 'New learning state'),
-            'mastery' => new external_value(PARAM_FLOAT, 'Unused, -1'),
-        ]);
+        return new external_single_structure(
+            [
+                'correct' => new external_value(PARAM_BOOL, 'Was correct (always false in mastery checks)'),
+                'recorded' => new external_value(PARAM_BOOL, 'Stored'),
+                'state' => new external_value(PARAM_ALPHA, 'New learning state'),
+                'mastery' => new external_value(PARAM_FLOAT, 'Unused, -1'),
+            ]
+        );
     }
 }

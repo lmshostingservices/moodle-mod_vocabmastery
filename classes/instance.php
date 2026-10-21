@@ -313,10 +313,12 @@ class instance {
     public function log_view(): void {
         global $CFG;
         require_once($CFG->libdir . '/completionlib.php');
-        $event = event\course_module_viewed::create([
-            'objectid' => $this->vm->id,
-            'context' => $this->context,
-        ]);
+        $event = event\course_module_viewed::create(
+            [
+                'objectid' => $this->vm->id,
+                'context' => $this->context,
+            ]
+        );
         $course = $this->course ?? get_course($this->vm->course);
         $event->add_record_snapshot('course', $course);
         $event->add_record_snapshot('vocabmastery', $this->vm);

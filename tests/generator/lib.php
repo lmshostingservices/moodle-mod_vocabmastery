@@ -48,8 +48,14 @@ class mod_vocabmastery_generator extends testing_module_generator {
     public function create_topic_with_items(int $vmid, array $items, array $setdata = []): array {
         $levelid = \mod_vocabmastery\content::add_level($vmid, 'A1');
         $topicid = \mod_vocabmastery\content::add_topic($vmid, $levelid, 'Lektion 1', 1);
-        $setid = \mod_vocabmastery\content::add_set($vmid, $topicid, $setdata + ['name' => 'Nomen + Artikel',
-            'options' => "der\ndie\ndas"]);
+        $setid = \mod_vocabmastery\content::add_set(
+            $vmid,
+            $topicid,
+            $setdata + [
+                'name' => 'Nomen + Artikel',
+                'options' => "der\ndie\ndas",
+            ]
+        );
         $itemids = [];
         foreach ($items as [$prompt, $answer]) {
             $itemids[] = \mod_vocabmastery\content::add_item($vmid, $setid, ['prompt' => $prompt, 'correctvalue' => $answer]);
@@ -68,11 +74,22 @@ class mod_vocabmastery_generator extends testing_module_generator {
         $levelid = \mod_vocabmastery\content::level_by_name($vmid, $data['level'] ?? 'A1');
         $topicid = \mod_vocabmastery\content::topic_by_name($vmid, $levelid, $data['topic']);
         $options = str_replace('/', "\n", $data['options'] ?? 'der/die/das');
-        $setid = \mod_vocabmastery\content::set_by_name($vmid, $topicid, $data['set'] ?? 'Nomen + Artikel', [
-            'itemtype' => 'choice', 'answermode' => 'fixed', 'options' => $options,
-            'numoptions' => count(explode("\n", $options)), 'gated' => 1,
-        ]);
-        return \mod_vocabmastery\content::add_item($vmid, $setid, ['prompt' => $data['prompt'],
-            'correctvalue' => $data['answer'], 'translation' => $data['translation'] ?? '']);
+        $setid = \mod_vocabmastery\content::set_by_name(
+            $vmid,
+            $topicid,
+            $data['set'] ?? 'Nomen + Artikel',
+            [
+                'itemtype' => 'choice', 'answermode' => 'fixed', 'options' => $options,
+                'numoptions' => count(explode("\n", $options)), 'gated' => 1,
+            ]
+        );
+        return \mod_vocabmastery\content::add_item(
+            $vmid,
+            $setid,
+            [
+                'prompt' => $data['prompt'],
+                'correctvalue' => $data['answer'], 'translation' => $data['translation'] ?? '',
+            ]
+        );
     }
 }

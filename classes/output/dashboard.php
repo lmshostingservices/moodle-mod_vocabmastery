@@ -155,11 +155,14 @@ class dashboard implements renderable, templatable {
             ];
         }
         $difficult = $this->progress->difficult_items(null);
-        $difficulttop = array_map(fn($r) => [
-            'prompt' => $r->prompt,
-            'correct' => $r->correctvalue,
-            'accuracy' => $r->attempts ? (int)round($r->correct / $r->attempts * 100) : 0,
-        ], array_slice($difficult, 0, 6));
+        $difficulttop = array_map(
+            fn($r) => [
+                'prompt' => $r->prompt,
+                'correct' => $r->correctvalue,
+                'accuracy' => $r->attempts ? (int)round($r->correct / $r->attempts * 100) : 0,
+            ],
+            array_slice($difficult, 0, 6)
+        );
 
         $total = count($this->progress->countable_summaries());
         $counts = \mod_vocabmastery\content::counts((int)$vm->id);

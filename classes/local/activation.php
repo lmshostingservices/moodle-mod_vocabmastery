@@ -173,11 +173,15 @@ class activation {
         } catch (\moodle_exception $e) {
             return ['outcome' => 'nocredentials'];
         }
-        $r = $this->call('POST', '/api/plugin-unlock/verify', [
-            'pluginId' => self::PLUGIN_ID,
-            'siteId' => $pair['siteid'],
-            'apiKey' => $pair['apikey'],
-        ]);
+        $r = $this->call(
+            'POST',
+            '/api/plugin-unlock/verify',
+            [
+                'pluginId' => self::PLUGIN_ID,
+                'siteId' => $pair['siteid'],
+                'apiKey' => $pair['apikey'],
+            ]
+        );
         $now = time();
         if ($r['status'] === 401 || $r['status'] === 403) {
             self::save_state(['state' => self::STATE_UNVERIFIED, 'checked' => $now]);
@@ -189,15 +193,18 @@ class activation {
         }
         $d = $r['data'];
         $unlocked = $d['unlocked'] === true || $d['unlocked'] === 1 || $d['unlocked'] === 'true';
-        self::save_state([
-            'state' => $unlocked ? self::STATE_UNLOCKED : self::STATE_LOCKED,
-            'checked' => $now,
-            'credits' => self::parse_balance($d),
-            'unlockedat' => is_scalar($d['unlockedAt'] ?? null) ? clean_param((string)$d['unlockedAt'], PARAM_TEXT) : '',
-            'source' => is_scalar($d['entitlementSource'] ?? null) ? clean_param((string)$d['entitlementSource'], PARAM_TEXT) : '',
-            // A definite answer resolves any earlier uncertain purchase.
-            'pending' => false,
-        ]);
+        self::save_state(
+            [
+                'state' => $unlocked ? self::STATE_UNLOCKED : self::STATE_LOCKED,
+                'checked' => $now,
+                'credits' => self::parse_balance($d),
+                'unlockedat' => is_scalar($d['unlockedAt'] ?? null) ? clean_param((string)$d['unlockedAt'], PARAM_TEXT) : '',
+                'source' => is_scalar($d['entitlementSource'] ?? null)
+                    ? clean_param((string)$d['entitlementSource'], PARAM_TEXT) : '',
+                // A definite answer resolves any earlier uncertain purchase.
+                'pending' => false,
+            ]
+        );
         return ['outcome' => $unlocked ? 'unlocked' : 'locked'];
     }
 
@@ -224,12 +231,16 @@ class activation {
      * plugins["mod_vocabmastery"] = {version, numericVersion, status, component, zipExists, credits,
      * creditsRequired, acquisitionMode, sha256, downloadUrl}.
      *
-     * @return array ['ok' => bool, 'reason' => string, 'sha256' => string, 'credits' => int|null,
-     *                'status' => string, 'mode' => string, 'version' => string]
+     * @return array [
+         'ok' => bool, 'reason' => string, 'sha256' => string, 'credits' => int|null,
+     *                'status' => string, 'mode' => string, 'version' => string,
+     ]
      */
     public function manifest(): array {
-        $fail = fn(string $reason, array $extra = []) => $extra + ['ok' => false, 'reason' => $reason, 'sha256' => '',
-            'credits' => null, 'status' => '', 'mode' => '', 'version' => ''];
+        $fail = fn(string $reason, array $extra = []) => $extra + [
+            'ok' => false, 'reason' => $reason, 'sha256' => '',
+            'credits' => null, 'status' => '', 'mode' => '', 'version' => '',
+        ];
         $r = $this->call('GET', '/api/plugin-versions');
         if ($r['status'] !== 200 || !$r['data']) {
             return $fail('manifestunavailable');
@@ -316,14 +327,18 @@ class activation {
         if ($live['sha256'] !== strtolower($confirmedsha) || $live['credits'] !== $confirmedcredits) {
             return ['outcome' => 'stale', 'required' => $live['credits']];
         }
-        $r = $this->call('POST', '/api/plugin-unlock', [
-            'pluginId' => self::PLUGIN_ID,
-            'pluginComponent' => self::COMPONENT,
-            'siteId' => $pair['siteid'],
-            'apiKey' => $pair['apikey'],
-            'releaseSha256' => $live['sha256'],
-            'expectedCredits' => $live['credits'],
-        ]);
+        $r = $this->call(
+            'POST',
+            '/api/plugin-unlock',
+            [
+                'pluginId' => self::PLUGIN_ID,
+                'pluginComponent' => self::COMPONENT,
+                'siteId' => $pair['siteid'],
+                'apiKey' => $pair['apikey'],
+                'releaseSha256' => $live['sha256'],
+                'expectedCredits' => $live['credits'],
+            ]
+        );
         $d = $r['data'] ?? [];
         $code = self::error_code($r['data']);
         $message = self::server_message($r['data'], $pair['apikey']);
@@ -341,8 +356,10 @@ class activation {
         }
         if ($r['status'] === 402 || strpos($code, 'insufficient') !== false) {
             $required = $d['creditsRequired'] ?? null;
-            return ['outcome' => 'insufficient', 'required' => is_numeric($required) ? (int)$required : $live['credits'],
-                'message' => $message];
+            return [
+                'outcome' => 'insufficient', 'required' => is_numeric($required) ? (int)$required : $live['credits'],
+                'message' => $message,
+            ];
         }
         if ($r['status'] === 409) {
             // 409 covers several conditions; only a stale price is a known "review and confirm again" case.
@@ -370,12 +387,14 @@ class activation {
             $outcome = 'unlocked';
             $charged = $consumed;
         }
-        self::save_state([
-            'state' => self::STATE_UNLOCKED,
-            'pending' => false,
-            'checked' => time(),
-            'source' => $source,
-        ]);
+        self::save_state(
+            [
+                'state' => self::STATE_UNLOCKED,
+                'pending' => false,
+                'checked' => time(),
+                'source' => $source,
+            ]
+        );
         return ['outcome' => $outcome, 'charged' => $charged, 'message' => $message];
     }
 

@@ -106,10 +106,13 @@ if ($step === 'previewdocx') {
                 'count' => $s['core'] ? get_string('ncore', $c, $core) : get_string('noptional', $c, count($s['items']) - $core),
                 'checked' => (bool)$s['core'],
                 'skippedcount' => $s['skipped'] ? get_string('nskipped', $c, count($s['skipped'])) : '',
-                'skippedlist' => implode(', ', array_map(
-                    fn($k) => $k['prompt'] . ' (' . get_string('skip_' . $k['reason'], $c) . ')',
-                    $s['skipped']
-                )),
+                'skippedlist' => implode(
+                    ', ',
+                    array_map(
+                        fn($k) => $k['prompt'] . ' (' . get_string('skip_' . $k['reason'], $c) . ')',
+                        $s['skipped']
+                    )
+                ),
                 'answers' => $settings['answermode'] === 'fixed' ? str_replace("\n", ' / ', $settings['options'])
                     : get_string('answermode_pool', $c),
                 'gated' => (bool)$settings['gated'],
@@ -134,15 +137,18 @@ if ($step === 'previewdocx') {
     }
     echo $OUTPUT->header();
     echo $OUTPUT->heading(get_string('importpreview', $c));
-    echo $OUTPUT->render_from_template('mod_vocabmastery/import_docx_preview', [
-        'actionurl' => $instance->url('import.php')->out(false),
-        'sesskey' => sesskey(),
-        'token' => $token,
-        'summary' => get_string('importsummary', $c, (object)$totals),
-        'duplicates' => $dupoptions('skip'),
-        'levels' => $levels,
-        'cancelurl' => $instance->url('import.php')->out(false),
-    ]);
+    echo $OUTPUT->render_from_template(
+        'mod_vocabmastery/import_docx_preview',
+        [
+            'actionurl' => $instance->url('import.php')->out(false),
+            'sesskey' => sesskey(),
+            'token' => $token,
+            'summary' => get_string('importsummary', $c, (object)$totals),
+            'duplicates' => $dupoptions('skip'),
+            'levels' => $levels,
+            'cancelurl' => $instance->url('import.php')->out(false),
+        ]
+    );
     echo $OUTPUT->footer();
     die;
 }
@@ -212,44 +218,53 @@ if ($step === 'maptable') {
     }
     $names = fn(array $list) => array_values(array_map(fn($v) => ['value' => $v], array_unique($list)));
     $targets = [
-        ['name' => 'targetlevel', 'label' => get_string('defaultlevelname', $c), 'value' => $level,
-            'list' => $names(array_map(fn($l) => $l->name, $instance->get_levels()))],
-        ['name' => 'targettopic', 'label' => get_string('defaulttopicname', $c), 'value' => $topic,
-            'list' => $names(array_map(fn($t) => $t->name, $instance->get_topics()))],
-        ['name' => 'targetset', 'label' => get_string('defaultsetname', $c), 'value' => $set,
-            'list' => $names(array_map(fn($s) => $s->name, $instance->get_all_sets()))],
+        [
+            'name' => 'targetlevel', 'label' => get_string('defaultlevelname', $c), 'value' => $level,
+            'list' => $names(array_map(fn($l) => $l->name, $instance->get_levels())),
+        ],
+        [
+            'name' => 'targettopic', 'label' => get_string('defaulttopicname', $c), 'value' => $topic,
+            'list' => $names(array_map(fn($t) => $t->name, $instance->get_topics())),
+        ],
+        [
+            'name' => 'targetset', 'label' => get_string('defaultsetname', $c), 'value' => $set,
+            'list' => $names(array_map(fn($s) => $s->name, $instance->get_all_sets())),
+        ],
     ];
     $cols = array_values(array_unique(array_filter($mapping, fn($f) => $f !== 'ignore')));
     echo $OUTPUT->header();
     echo $OUTPUT->heading(get_string('importmapping', $c));
-    echo $OUTPUT->render_from_template('mod_vocabmastery/import_table_mapping', [
-        'actionurl' => $instance->url('import.php')->out(false),
-        'sesskey' => sesskey(),
-        'token' => $token,
-        'detected' => implode(' · ', $detected),
-        'columns' => $columns,
-        'samplerows' => $samplerows,
-        'rowcount' => get_string('nrows', $c, count($rows)),
-        'hasheader' => (bool)$hasheader,
-        'targets' => $targets,
-        'duplicates' => $dupoptions($duplicates),
-        'ready' => $ready,
-        'haswarnings' => (bool)$warnings,
-        'warningtitle' => get_string('nwarnings', $c, count($warnings)),
-        'warnings' => array_map(
-            fn($w) => ['text' => get_string('rown', $c, $w[0]) . ': ' . $w[1]],
-            array_slice($warnings, 0, 25)
-        ),
-        'haspreview' => $ready && $records,
-        'previewtitle' => get_string('previewn', $c, count($records)),
-        'previewhead' => array_map(fn($f) => ['label' => $fieldlabels[$f]], $cols),
-        'previewrows' => array_map(
-            fn($rec) => ['cells' => array_map(fn($f) => ['value' => (string)($rec[$f] ?? '')], $cols)],
-            array_slice($records, 0, 30)
-        ),
-        'importlabel' => get_string('importnrows', $c, count($records)),
-        'cancelurl' => $instance->url('import.php', ['source' => 'table'])->out(false),
-    ]);
+    echo $OUTPUT->render_from_template(
+        'mod_vocabmastery/import_table_mapping',
+        [
+            'actionurl' => $instance->url('import.php')->out(false),
+            'sesskey' => sesskey(),
+            'token' => $token,
+            'detected' => implode(' · ', $detected),
+            'columns' => $columns,
+            'samplerows' => $samplerows,
+            'rowcount' => get_string('nrows', $c, count($rows)),
+            'hasheader' => (bool)$hasheader,
+            'targets' => $targets,
+            'duplicates' => $dupoptions($duplicates),
+            'ready' => $ready,
+            'haswarnings' => (bool)$warnings,
+            'warningtitle' => get_string('nwarnings', $c, count($warnings)),
+            'warnings' => array_map(
+                fn($w) => ['text' => get_string('rown', $c, $w[0]) . ': ' . $w[1]],
+                array_slice($warnings, 0, 25)
+            ),
+            'haspreview' => $ready && $records,
+            'previewtitle' => get_string('previewn', $c, count($records)),
+            'previewhead' => array_map(fn($f) => ['label' => $fieldlabels[$f]], $cols),
+            'previewrows' => array_map(
+                fn($rec) => ['cells' => array_map(fn($f) => ['value' => (string)($rec[$f] ?? '')], $cols)],
+                array_slice($records, 0, 30)
+            ),
+            'importlabel' => get_string('importnrows', $c, count($records)),
+            'cancelurl' => $instance->url('import.php', ['source' => 'table'])->out(false),
+        ]
+    );
     echo $OUTPUT->footer();
     die;
 }
@@ -329,17 +344,22 @@ $form = $source === 'table' ? $tableform : $wordform;
 if ($source === 'table') {
     $columns = [];
     foreach (\mod_vocabmastery\import\sample::COLUMNS as $col) {
-        $columns[] = ['name' => $col, 'required' => in_array($col, ['answer', 'prompt'], true),
-            'desc' => get_string('col_' . $col . '_desc', $c)];
+        $columns[] = [
+            'name' => $col, 'required' => in_array($col, ['answer', 'prompt'], true),
+            'desc' => get_string('col_' . $col . '_desc', $c),
+        ];
     }
-    echo $OUTPUT->render_from_template('mod_vocabmastery/import_help', [
-        'xlsxurl' => $instance->url('sample.php', ['type' => 'xlsx'])->out(false),
-        'csvurl' => $instance->url('sample.php', ['type' => 'csv'])->out(false),
-        'prompturl' => $instance->url('sample.php', ['type' => 'prompt'])->out(false),
-        'prompt' => \mod_vocabmastery\import\sample::chatgpt_prompt(),
-        'uniqid' => html_writer::random_id('vmhelp'),
-        'columns' => $columns,
-    ]);
+    echo $OUTPUT->render_from_template(
+        'mod_vocabmastery/import_help',
+        [
+            'xlsxurl' => $instance->url('sample.php', ['type' => 'xlsx'])->out(false),
+            'csvurl' => $instance->url('sample.php', ['type' => 'csv'])->out(false),
+            'prompturl' => $instance->url('sample.php', ['type' => 'prompt'])->out(false),
+            'prompt' => \mod_vocabmastery\import\sample::chatgpt_prompt(),
+            'uniqid' => html_writer::random_id('vmhelp'),
+            'columns' => $columns,
+        ]
+    );
 }
 $form->set_data(['id' => $id, 'source' => $source]);
 $form->display();

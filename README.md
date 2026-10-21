@@ -4,7 +4,7 @@ A Moodle activity for vocabulary that has to be memorised rather than derived fr
 
 Nothing language-specific is hard-coded. German der/die/das, A1/A2/B1 and lesson names are **content**, not code.
 
-- Component: `mod_vocabmastery`, version 1.0.0 (stable)
+- Component: `mod_vocabmastery`, version 1.1.0 (stable)
 - Target: Moodle 4.4 – 5.2 (`requires` 2024042200, `supported` [404, 502]). Runtime-tested on Moodle 5.0.10 / PHP 8.4 /
   PostgreSQL 16 (full), Moodle 4.4.12 / PHP 8.3 (upgrade, PHPUnit) and Moodle 5.2.3 (upgrade, PHPUnit, Behat); the other versions are covered by the CI matrix in `.github/workflows/ci.yml` (repository only, not in the ZIP).
 - Moodle code checker (moodle-cs): 0 errors, 0 warnings. PHPDoc checker (local_moodlecheck): 0 errors. Grunt (ESLint,
@@ -52,7 +52,7 @@ The Excel / CSV / paste tab has step-by-step instructions, a column reference, *
 - **Practice**: items are ordered by weight (new ×2, missed once ×3, 2+ misses ×5, previously difficult ×4, mastered ×0.5). A missed word comes back 3–5 cards later and must be answered correctly before the session ends. Every 5–8 answers a difficult word from another unlocked topic with the same kind of answers is mixed in.
 - **Blitz** (timed, default 60 s) and **Streak** (until the first mistake): these track personal bests and by default do **not** count towards mastery.
 - **Difficult words**: for a topic, or across the whole activity.
-- **Mastery check**: no feedback and no hints until the end. The correct answers are never sent to the browser. After a failed check, the missed items are always included in the next one, and the result screen offers "Practise these N".
+- **Mastery check**: no feedback and no hints until the end. The correct answers are never sent to the browser. After a failed check, the missed items are always included in the next one, and the result screen offers "Practise these N". Optionally (setting "After the mastery check" = hide), learners see only their score and per-set totals, not which words were wrong or the correct answers.
 - **Results**: every session ends with a results screen. It shows a score ring, time taken, comparison with last time, a right/wrong tile per word, strengths and weak sets, one recommended next step, and a full answer review.
 - **Report a problem**: learners can flag a word (wrong answer, spelling, translation or other). Teachers see open reports on the set's word table and mark them as fixed.
 - **Keyboard**: 1–9 answer, Enter continue, Space reveal, Esc exit. The layout is mobile-first, with ARIA live feedback, visible focus, correct/wrong shown by more than colour, and reduced-motion support. Clean light design by default in its own "Harbour & Coral" palette (navy brand, coral highlight, green/red only for right and wrong), with a matching dark scheme per activity.
@@ -63,7 +63,7 @@ The Excel / CSV / paste tab has step-by-step instructions, a column reference, *
 - **Difficult**: 2+ wrong answers, or under 60% accuracy after 3 attempts, until the item is mastered again.
 - **Topic mastery**: % of the topic's gated core items that are mastered. Optional items never block progress.
 - **Topic passed**: mastery check ≥ threshold (default), OR practice mastery ≥ threshold, OR either. Default threshold 90%.
-- **Progression**: *dual pathway* (default: after passing, go right to the next topic in the same level or down to the same topic in the next level), *linear*, *level pathway*, or *open*. Teachers and managers can preview locked topics.
+- **Progression**: *dual pathway* (default: after passing, go right to the next topic in the same level or down to the same topic in the next level), *linear*, *level pathway*, or *open*. Optional backward progression ("Also open earlier topics in the same level"): once a topic is open, the earlier topics of its level open too. Teachers and managers can preview locked topics.
 
 ## Teacher reports
 

@@ -59,11 +59,16 @@ class mod_vocabmastery_mod_form extends moodleform_mod {
         $mform->setDefault('masterythreshold', 90);
         $mform->addHelpButton('masterythreshold', 'masterythreshold', $c);
 
-        $mform->addElement('select', 'unlockby', get_string('unlockby', $c), [
-            'test' => get_string('unlockby_test', $c),
-            'practice' => get_string('unlockby_practice', $c),
-            'either' => get_string('unlockby_either', $c),
-        ]);
+        $mform->addElement(
+            'select',
+            'unlockby',
+            get_string('unlockby', $c),
+            [
+                'test' => get_string('unlockby_test', $c),
+                'practice' => get_string('unlockby_practice', $c),
+                'either' => get_string('unlockby_either', $c),
+            ]
+        );
         $mform->setDefault('unlockby', 'test');
         $mform->addHelpButton('unlockby', 'unlockby', $c);
 
@@ -79,17 +84,37 @@ class mod_vocabmastery_mod_form extends moodleform_mod {
         $mform->addElement('select', 'itemstreakrequired', get_string('itemstreakrequired', $c), $opts);
         $mform->setDefault('itemstreakrequired', 2);
         $mform->addHelpButton('itemstreakrequired', 'itemstreakrequired', $c);
+        $mform->addElement(
+            'select',
+            'testreview',
+            get_string('testreview', $c),
+            [
+                'show' => get_string('testreview_show', $c),
+                'hide' => get_string('testreview_hide', $c),
+            ]
+        );
+        $mform->setDefault('testreview', 'show');
+        $mform->addHelpButton('testreview', 'testreview', $c);
 
         // Progression.
         $mform->addElement('header', 'progressionhdr', get_string('progressionsettings', $c));
-        $mform->addElement('select', 'progressionmode', get_string('progressionmode', $c), [
-            'dual' => get_string('progression_dual', $c),
-            'linear' => get_string('progression_linear', $c),
-            'level' => get_string('progression_level', $c),
-            'open' => get_string('progression_open', $c),
-        ]);
+        $mform->addElement(
+            'select',
+            'progressionmode',
+            get_string('progressionmode', $c),
+            [
+                'dual' => get_string('progression_dual', $c),
+                'linear' => get_string('progression_linear', $c),
+                'level' => get_string('progression_level', $c),
+                'open' => get_string('progression_open', $c),
+            ]
+        );
         $mform->setDefault('progressionmode', 'dual');
         $mform->addHelpButton('progressionmode', 'progressionmode', $c);
+        $mform->addElement('advcheckbox', 'openprevious', get_string('openprevious', $c));
+        $mform->setDefault('openprevious', 0);
+        $mform->addHelpButton('openprevious', 'openprevious', $c);
+        $mform->hideIf('openprevious', 'progressionmode', 'eq', 'open');
 
         // Training modes.
         $mform->addElement('header', 'modeshdr', get_string('trainingmodes', $c));
@@ -119,19 +144,29 @@ class mod_vocabmastery_mod_form extends moodleform_mod {
         $mform->addElement('advcheckbox', 'injectdifficult', get_string('injectdifficult', $c));
         $mform->setDefault('injectdifficult', 1);
         $mform->addHelpButton('injectdifficult', 'injectdifficult', $c);
-        $mform->addElement('select', 'colourscheme', get_string('colourscheme', $c), [
-            'light' => get_string('colourscheme_light', $c),
-            'dark' => get_string('colourscheme_dark', $c),
-        ]);
+        $mform->addElement(
+            'select',
+            'colourscheme',
+            get_string('colourscheme', $c),
+            [
+                'light' => get_string('colourscheme_light', $c),
+                'dark' => get_string('colourscheme_dark', $c),
+            ]
+        );
         $mform->setDefault('colourscheme', 'light');
         $mform->addHelpButton('colourscheme', 'colourscheme', $c);
 
         // Grade.
         $this->standard_grading_coursemodule_elements();
-        $mform->addElement('select', 'grademethod', get_string('grademethod', $c), [
-            1 => get_string('grademethod_topics', $c),
-            2 => get_string('grademethod_test', $c),
-        ]);
+        $mform->addElement(
+            'select',
+            'grademethod',
+            get_string('grademethod', $c),
+            [
+                1 => get_string('grademethod_topics', $c),
+                2 => get_string('grademethod_test', $c),
+            ]
+        );
         $mform->setDefault('grademethod', 1);
         $mform->addHelpButton('grademethod', 'grademethod', $c);
         $mform->setDefault('grade', 100);

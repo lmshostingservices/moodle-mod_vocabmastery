@@ -54,8 +54,13 @@ final class table_parser_test extends \advanced_testcase {
         $this->assertCount(count(sample::ROWS) + 1, $rows);
         $this->assertSame(sample::COLUMNS, array_map('strval', $rows[0]));
         $guess = table_parser::guess_mapping($rows);
-        $this->assertSame(['level', 'topic', 'set', 'correctvalue', 'prompt', 'translation', 'plural', 'altanswers', 'hint',
-            'iscore'], array_values($guess['mapping']));
+        $this->assertSame(
+            [
+                'level', 'topic', 'set', 'correctvalue', 'prompt', 'translation', 'plural', 'altanswers', 'hint',
+                'iscore',
+            ],
+            array_values($guess['mapping'])
+        );
     }
 
     public function test_import_records_builds_structure_and_skips_duplicates(): void {

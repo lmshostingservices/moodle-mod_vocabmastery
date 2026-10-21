@@ -39,12 +39,14 @@ class report_item extends external_api {
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
-        return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module id'),
-            'itemid' => new external_value(PARAM_INT, 'Item id'),
-            'reason' => new external_value(PARAM_ALPHA, 'wronganswer, typo, translation or other'),
-            'comment' => new external_value(PARAM_TEXT, 'Optional comment', VALUE_DEFAULT, ''),
-        ]);
+        return new external_function_parameters(
+            [
+                'cmid' => new external_value(PARAM_INT, 'Course module id'),
+                'itemid' => new external_value(PARAM_INT, 'Item id'),
+                'reason' => new external_value(PARAM_ALPHA, 'wronganswer, typo, translation or other'),
+                'comment' => new external_value(PARAM_TEXT, 'Optional comment', VALUE_DEFAULT, ''),
+            ]
+        );
     }
 
     /**
@@ -77,12 +79,22 @@ class report_item extends external_api {
         // One open report per learner and word: a second report updates the first.
         $existing = $DB->get_record('vocabmastery_flag', ['itemid' => $item->id, 'userid' => $USER->id, 'resolved' => 0]);
         if ($existing) {
-            $DB->update_record('vocabmastery_flag', (object)['id' => $existing->id, 'reason' => $params['reason'],
-                'commenttext' => $comment, 'timemodified' => $now]);
+            $DB->update_record(
+                'vocabmastery_flag',
+                (object)[
+                    'id' => $existing->id, 'reason' => $params['reason'],
+                    'commenttext' => $comment, 'timemodified' => $now,
+                ]
+            );
         } else {
-            $DB->insert_record('vocabmastery_flag', (object)['vocabmasteryid' => $instance->vm->id, 'itemid' => $item->id,
-                'userid' => $USER->id, 'reason' => $params['reason'], 'commenttext' => $comment, 'resolved' => 0,
-                'timecreated' => $now, 'timemodified' => $now]);
+            $DB->insert_record(
+                'vocabmastery_flag',
+                (object)[
+                    'vocabmasteryid' => $instance->vm->id, 'itemid' => $item->id,
+                    'userid' => $USER->id, 'reason' => $params['reason'], 'commenttext' => $comment, 'resolved' => 0,
+                    'timecreated' => $now, 'timemodified' => $now,
+                ]
+            );
         }
         return ['saved' => true];
     }
@@ -93,8 +105,10 @@ class report_item extends external_api {
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
-        return new external_single_structure([
-            'saved' => new external_value(PARAM_BOOL, 'Report saved'),
-        ]);
+        return new external_single_structure(
+            [
+                'saved' => new external_value(PARAM_BOOL, 'Report saved'),
+            ]
+        );
     }
 }

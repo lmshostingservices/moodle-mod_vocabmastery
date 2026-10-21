@@ -30,8 +30,10 @@ namespace mod_vocabmastery\import;
  */
 class docx_parser {
     /** Words that can end a reflexive verb and actually are its fixed preposition. */
-    const PREPOSITIONS = ['an', 'auf', 'aus', 'bei', 'durch', 'für', 'gegen', 'in', 'mit', 'nach', 'über', 'um',
-        'unter', 'von', 'vor', 'zu', 'zwischen'];
+    const PREPOSITIONS = [
+        'an', 'auf', 'aus', 'bei', 'durch', 'für', 'gegen', 'in', 'mit', 'nach', 'über', 'um',
+        'unter', 'von', 'vor', 'zu', 'zwischen',
+    ];
 
     /** Largest word/document.xml we unpack (bytes). */
     const MAX_DOCUMENT_XML_BYTES = 20 * 1024 * 1024;
@@ -238,14 +240,20 @@ class docx_parser {
             }
         }
         $ignore = self::ignored_note_prefixes();
-        $doc['notes'] = implode("\n", array_filter($notes, function ($n) use ($ignore) {
-            foreach ($ignore as $prefix) {
-                if (\core_text::strpos(\core_text::strtolower($n), $prefix) === 0) {
-                    return false;
+        $doc['notes'] = implode(
+            "\n",
+            array_filter(
+                $notes,
+                function ($n) use ($ignore) {
+                    foreach ($ignore as $prefix) {
+                        if (\core_text::strpos(\core_text::strtolower($n), $prefix) === 0) {
+                            return false;
+                        }
+                    }
+                    return true;
                 }
-            }
-            return true;
-        }));
+            )
+        );
         self::merge_and_validate($doc);
         return $doc;
     }
@@ -259,10 +267,17 @@ class docx_parser {
     protected static function ignored_note_prefixes(): array {
         $configured = preg_split('/\r\n|\r|\n/', (string)get_config('mod_vocabmastery', 'importignorelines'));
         $prefixes = array_merge(['quelle:', 'source:', '©', '(c) ', 'copyright'], $configured);
-        return array_values(array_unique(array_filter(array_map(
-            fn($p) => \core_text::strtolower(trim($p)),
-            $prefixes
-        ), fn($p) => $p !== '')));
+        return array_values(
+            array_unique(
+                array_filter(
+                    array_map(
+                        fn($p) => \core_text::strtolower(trim($p)),
+                        $prefixes
+                    ),
+                    fn($p) => $p !== ''
+                )
+            )
+        );
     }
 
     /**
@@ -425,8 +440,11 @@ class docx_parser {
         }
         if ($meaning) {
             $mname = get_string('meaningset', 'mod_vocabmastery', $name);
-            $out[] = array_merge($section, ['setname' => $mname, 'label' => $mname . ($optional ? ' (' .
-                get_string('optional', 'mod_vocabmastery') . ')' : ''), 'kind' => 'verb', 'items' => $meaning]);
+            $out[] = array_merge(
+                $section,
+                ['setname' => $mname, 'label' => $mname . ($optional ? ' (' .
+                    get_string('optional', 'mod_vocabmastery') . ')' : ''), 'kind' => 'verb', 'items' => $meaning]
+            );
         }
         return $out;
     }
@@ -476,8 +494,10 @@ class docx_parser {
                     continue;
                 }
                 if ($fixed && !in_array(mb_strtolower($item['correctvalue']), $fixed, true)) {
-                    $doc['warnings'][] = ['type' => 'unknownanswer', 'prompt' => $item['prompt'],
-                        'value' => $item['correctvalue']];
+                    $doc['warnings'][] = [
+                        'type' => 'unknownanswer', 'prompt' => $item['prompt'],
+                        'value' => $item['correctvalue'],
+                    ];
                 }
                 $seen[$key] = true;
                 $item['iscore'] = $s['core'] ? 1 : 0;
@@ -501,36 +521,51 @@ class docx_parser {
         $options = null;
         foreach (self::ORDERED_OPTIONS as $set) {
             if ($lower && !array_diff($lower, $set)) {
-                $options = array_values(array_filter($set, fn($o) => in_array($o, $lower, true)
-                    || count($set) <= 3));
+                $options = array_values(
+                    array_filter(
+                        $set,
+                        fn($o) => in_array($o, $lower, true)
+                            || count($set) <= 3
+                    )
+                );
                 break;
             }
         }
         switch ($kind) {
             case 'noun':
                 $options = $options ?? $values;
-                return ['itemtype' => 'choice', 'answermode' => 'fixed', 'options' => implode("\n", $options),
+                return [
+                    'itemtype' => 'choice', 'answermode' => 'fixed', 'options' => implode("\n", $options),
                     'numoptions' => count($options), 'showtranslation' => 1, 'gated' => 1,
-                    'instruction' => get_string('instruction_article', 'mod_vocabmastery')];
+                    'instruction' => get_string('instruction_article', 'mod_vocabmastery'),
+                ];
             case 'verbprep':
-                return ['itemtype' => 'choice', 'answermode' => 'pool', 'options' => '', 'numoptions' => 4,
+                return [
+                    'itemtype' => 'choice', 'answermode' => 'pool', 'options' => '', 'numoptions' => 4,
                     'showtranslation' => 1, 'gated' => 0,
-                    'instruction' => get_string('instruction_preposition', 'mod_vocabmastery')];
+                    'instruction' => get_string('instruction_preposition', 'mod_vocabmastery'),
+                ];
             case 'verb':
-                return ['itemtype' => 'choice', 'answermode' => 'pool', 'options' => '', 'numoptions' => 4,
+                return [
+                    'itemtype' => 'choice', 'answermode' => 'pool', 'options' => '', 'numoptions' => 4,
                     'showtranslation' => 0, 'gated' => 0,
-                    'instruction' => get_string('instruction_meaning', 'mod_vocabmastery')];
+                    'instruction' => get_string('instruction_meaning', 'mod_vocabmastery'),
+                ];
             default:
                 // Fixed buttons only for a known article set, or a few answers repeated across the words.
                 // Unique answers (e.g. verb meanings) use a pool.
                 $repeats = $itemcount > count($values);
                 if ($options || ($values && count($values) <= 6 && $repeats)) {
                     $opts = $options ?? $values;
-                    return ['itemtype' => 'choice', 'answermode' => 'fixed', 'options' => implode("\n", $opts),
-                        'numoptions' => count($opts), 'showtranslation' => 1, 'gated' => 1, 'instruction' => ''];
+                    return [
+                        'itemtype' => 'choice', 'answermode' => 'fixed', 'options' => implode("\n", $opts),
+                        'numoptions' => count($opts), 'showtranslation' => 1, 'gated' => 1, 'instruction' => '',
+                    ];
                 }
-                return ['itemtype' => 'choice', 'answermode' => 'pool', 'options' => '', 'numoptions' => 4,
-                    'showtranslation' => 1, 'gated' => 1, 'instruction' => ''];
+                return [
+                    'itemtype' => 'choice', 'answermode' => 'pool', 'options' => '', 'numoptions' => 4,
+                    'showtranslation' => 1, 'gated' => 1, 'instruction' => '',
+                ];
         }
     }
 }

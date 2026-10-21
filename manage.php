@@ -51,13 +51,17 @@ if ($action === 'export') {
         foreach ($instance->get_topic_sets((int)$t->id) as $s) {
             foreach ($instance->get_set_items((int)$s->id) as $i) {
                 $meta = $i->metadata ? (json_decode($i->metadata, true) ?: []) : [];
-                $rows[] = [$level->name, $t->name, $s->name, $i->correctvalue, $i->prompt, $i->translation, $i->plural,
-                    $i->altanswers, $i->hint, $i->iscore ? 1 : 0, $meta['source'] ?? ''];
+                $rows[] = [
+                    $level->name, $t->name, $s->name, $i->correctvalue, $i->prompt, $i->translation, $i->plural,
+                    $i->altanswers, $i->hint, $i->iscore ? 1 : 0, $meta['source'] ?? '',
+                ];
             }
         }
     }
-    $columns = ['level', 'topic', 'set', 'answer', 'prompt', 'translation', 'plural', 'alternatives', 'hint', 'core',
-        'source'];
+    $columns = [
+        'level', 'topic', 'set', 'answer', 'prompt', 'translation', 'plural', 'alternatives', 'hint', 'core',
+        'source',
+    ];
     \core\dataformat::download_data(
         clean_filename($instance->vm->name . '-vocabulary'),
         'csv',
@@ -96,8 +100,13 @@ if ($action === 'delete') {
         redirect($baseurl, get_string('deleted', $c, format_string($rec->name)), null, \core\output\notification::NOTIFY_SUCCESS);
     }
     echo $OUTPUT->header();
-    $confirm = new moodle_url($baseurl, ['action' => 'delete', 'type' => $type, 'itemid' => $itemid, 'confirm' => 1,
-        'sesskey' => sesskey()]);
+    $confirm = new moodle_url(
+        $baseurl,
+        [
+            'action' => 'delete', 'type' => $type, 'itemid' => $itemid, 'confirm' => 1,
+            'sesskey' => sesskey(),
+        ]
+    );
     echo $OUTPUT->confirm(get_string('confirmdelete_' . $type, $c, format_string($rec->name)), $confirm, $baseurl);
     echo $OUTPUT->footer();
     die;
@@ -112,8 +121,13 @@ if ($action === 'editlevel') {
     } else if ($data = $form->get_data()) {
         if ($data->levelid) {
             $DB->get_record('vocabmastery_level', ['id' => $data->levelid, 'vocabmasteryid' => $vmid], '*', MUST_EXIST);
-            $DB->update_record('vocabmastery_level', (object)['id' => $data->levelid, 'name' => $data->name,
-                'description' => $data->description]);
+            $DB->update_record(
+                'vocabmastery_level',
+                (object)[
+                    'id' => $data->levelid, 'name' => $data->name,
+                    'description' => $data->description,
+                ]
+            );
         } else {
             content::add_level($vmid, $data->name, $data->description);
         }
@@ -146,9 +160,11 @@ if ($action === 'edittopic') {
         $instance->get_level((int)$data->levelid);
         if ($data->topicid) {
             $old = $DB->get_record('vocabmastery_topic', ['id' => $data->topicid, 'vocabmasteryid' => $vmid], '*', MUST_EXIST);
-            $rec = (object)['id' => $data->topicid, 'name' => $data->name, 'levelid' => $data->levelid,
+            $rec = (object)[
+                'id' => $data->topicid, 'name' => $data->name, 'levelid' => $data->levelid,
                 'pathkey' => (int)$data->pathkey, 'description' => $data->description,
-                'teachernotes' => $data->teachernotes, 'timemodified' => time()];
+                'teachernotes' => $data->teachernotes, 'timemodified' => time(),
+            ];
             if ((int)$old->levelid !== (int)$data->levelid) {
                 $rec->sortorder = (int)$DB->get_field(
                     'vocabmastery_topic',
@@ -197,9 +213,11 @@ if ($action === 'editset') {
         redirect($baseurl);
     } else if ($data = $form->get_data()) {
         $instance->get_topic((int)$data->topicid);
-        $rec = (object)['name' => $data->name, 'instruction' => $data->instruction, 'itemtype' => $data->itemtype,
+        $rec = (object)[
+            'name' => $data->name, 'instruction' => $data->instruction, 'itemtype' => $data->itemtype,
             'answermode' => $data->answermode, 'options' => trim($data->options), 'numoptions' => $data->numoptions,
-            'showtranslation' => $data->showtranslation, 'gated' => $data->gated, 'topicid' => $data->topicid];
+            'showtranslation' => $data->showtranslation, 'gated' => $data->gated, 'topicid' => $data->topicid,
+        ];
         if ($data->setid) {
             $DB->get_record('vocabmastery_set', ['id' => $data->setid, 'vocabmasteryid' => $vmid], '*', MUST_EXIST);
             $rec->id = $data->setid;
@@ -212,8 +230,10 @@ if ($action === 'editset') {
         }
         redirect(new moodle_url('/mod/vocabmastery/items.php', ['id' => $id, 'setid' => $newid]));
     }
-    $defaults = ['id' => $id, 'setid' => $setid, 'topicid' => optional_param('topicid', 0, PARAM_INT),
-        'options' => "der\ndie\ndas", 'instruction' => ''];
+    $defaults = [
+        'id' => $id, 'setid' => $setid, 'topicid' => optional_param('topicid', 0, PARAM_INT),
+        'options' => "der\ndie\ndas", 'instruction' => '',
+    ];
     if ($setid) {
         $s = $instance->get_set($setid);
         $defaults = array_merge($defaults, (array)$s, ['id' => $id, 'setid' => $setid]);
@@ -231,21 +251,36 @@ $counts = $DB->get_records_sql_menu(
     "SELECT setid, COUNT(1) FROM {vocabmastery_item} WHERE vocabmasteryid = :vid GROUP BY setid",
     ['vid' => $vmid]
 );
-$corecounts = $DB->get_records_sql_menu("SELECT setid, COUNT(1) FROM {vocabmastery_item}
-    WHERE vocabmasteryid = :vid AND iscore = 1 GROUP BY setid", ['vid' => $vmid]);
+$corecounts = $DB->get_records_sql_menu(
+    "SELECT setid, COUNT(1) FROM {vocabmastery_item}
+        WHERE vocabmasteryid = :vid AND iscore = 1 GROUP BY setid",
+    ['vid' => $vmid]
+);
 
 $actions = function (string $type, int $itemid, bool $first, bool $last, array $editparams) use ($baseurl) {
     $out = [['url' => (new moodle_url($baseurl, $editparams))->out(false), 'pix' => 't/edit', 'label' => get_string('edit')]];
     if (!$first) {
-        $out[] = ['url' => (new moodle_url($baseurl, ['action' => 'move', 'type' => $type, 'itemid' => $itemid, 'dir' => -1,
-            'sesskey' => sesskey()]))->out(false), 'pix' => 't/up', 'label' => get_string('moveup')];
+        $out[] = ['url' => (new moodle_url(
+            $baseurl,
+            [
+                'action' => 'move', 'type' => $type, 'itemid' => $itemid, 'dir' => -1,
+                'sesskey' => sesskey(),
+            ]
+        ))->out(false), 'pix' => 't/up', 'label' => get_string('moveup')];
     }
     if (!$last) {
-        $out[] = ['url' => (new moodle_url($baseurl, ['action' => 'move', 'type' => $type, 'itemid' => $itemid, 'dir' => 1,
-            'sesskey' => sesskey()]))->out(false), 'pix' => 't/down', 'label' => get_string('movedown')];
+        $out[] = ['url' => (new moodle_url(
+            $baseurl,
+            [
+                'action' => 'move', 'type' => $type, 'itemid' => $itemid, 'dir' => 1,
+                'sesskey' => sesskey(),
+            ]
+        ))->out(false), 'pix' => 't/down', 'label' => get_string('movedown')];
     }
-    $out[] = ['url' => (new moodle_url($baseurl, ['action' => 'delete', 'type' => $type, 'itemid' => $itemid]))->out(false),
-        'pix' => 't/delete', 'label' => get_string('delete'), 'danger' => true];
+    $out[] = [
+        'url' => (new moodle_url($baseurl, ['action' => 'delete', 'type' => $type, 'itemid' => $itemid]))->out(false),
+        'pix' => 't/delete', 'label' => get_string('delete'), 'danger' => true,
+    ];
     return $out;
 };
 
@@ -270,8 +305,14 @@ foreach ($levels as $li => $level) {
             $setsdata[] = [
                 'name' => format_string($set->name),
                 'url' => (new moodle_url('/mod/vocabmastery/items.php', ['id' => $id, 'setid' => $set->id]))->out(false),
-                'items' => get_string('nitems', $c, (object)['total' => (int)($counts[$set->id] ?? 0),
-                    'core' => (int)($corecounts[$set->id] ?? 0)]),
+                'items' => get_string(
+                    'nitems',
+                    $c,
+                    (object)[
+                        'total' => (int)($counts[$set->id] ?? 0),
+                        'core' => (int)($corecounts[$set->id] ?? 0),
+                    ]
+                ),
                 'gated' => (bool)$set->gated,
                 'reports' => !empty($flagcounts[$set->id]) ? get_string('reports_count', $c, (int)$flagcounts[$set->id]) : '',
                 'answers' => $set->answermode === 'fixed' && $set->itemtype === 'choice'
@@ -320,15 +361,18 @@ foreach ($levels as $li => $level) {
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(format_string($instance->vm->name) . ': ' . get_string('managecontent', $c));
-echo $OUTPUT->render_from_template('mod_vocabmastery/manage', [
-    'addlevelurl' => (new moodle_url($baseurl, ['action' => 'editlevel']))->out(false),
-    'addtopicurl' => (new moodle_url($baseurl, ['action' => 'edittopic']))->out(false),
-    'addseturl' => (new moodle_url($baseurl, ['action' => 'editset']))->out(false),
-    'importurl' => $instance->url('import.php')->out(false),
-    'exporturl' => $totals['items'] ? (new moodle_url($baseurl, ['action' => 'export', 'sesskey' => sesskey()]))->out(false)
-        : null,
-    'counts' => get_string('contentcounts', $c, (object)$totals),
-    'haslevels' => (bool)$levelsdata,
-    'levels' => $levelsdata,
-]);
+echo $OUTPUT->render_from_template(
+    'mod_vocabmastery/manage',
+    [
+        'addlevelurl' => (new moodle_url($baseurl, ['action' => 'editlevel']))->out(false),
+        'addtopicurl' => (new moodle_url($baseurl, ['action' => 'edittopic']))->out(false),
+        'addseturl' => (new moodle_url($baseurl, ['action' => 'editset']))->out(false),
+        'importurl' => $instance->url('import.php')->out(false),
+        'exporturl' => $totals['items'] ? (new moodle_url($baseurl, ['action' => 'export', 'sesskey' => sesskey()]))->out(false)
+            : null,
+        'counts' => get_string('contentcounts', $c, (object)$totals),
+        'haslevels' => (bool)$levelsdata,
+        'levels' => $levelsdata,
+    ]
+);
 echo $OUTPUT->footer();

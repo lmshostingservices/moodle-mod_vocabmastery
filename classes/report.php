@@ -46,12 +46,15 @@ class report {
      */
     public function students(int $groupid = 0): array {
         $extra = array_map(fn($f) => 'u.' . $f, array_diff($this->identity_fields(), ['email']));
-        $fields = implode(', ', array_merge(
-            ['u.id'],
-            \core_user\fields::get_name_fields(true),
-            ['u.email', 'u.picture', 'u.imagealt'],
-            $extra
-        ));
+        $fields = implode(
+            ', ',
+            array_merge(
+                ['u.id'],
+                \core_user\fields::get_name_fields(true),
+                ['u.email', 'u.picture', 'u.imagealt'],
+                $extra
+            )
+        );
         $users = get_enrolled_users(
             $this->instance->context,
             'mod/vocabmastery:attempt',
@@ -108,10 +111,16 @@ class report {
         $stats = $DB->get_records_sql($sql, $params);
         $params2 = $params;
         unset($params2['learn']);
-        $difficult = $DB->get_records_sql_menu("SELECT userid, COUNT(1) FROM {vocabmastery_itemstate}
-            WHERE vocabmasteryid = :vid AND userid $in AND difficult = 1 GROUP BY userid", $params2);
-        $last = $DB->get_records_sql_menu("SELECT userid, MAX(timestart) FROM {vocabmastery_attempt}
-            WHERE vocabmasteryid = :vid AND userid $in GROUP BY userid", $params2);
+        $difficult = $DB->get_records_sql_menu(
+            "SELECT userid, COUNT(1) FROM {vocabmastery_itemstate}
+                WHERE vocabmasteryid = :vid AND userid $in AND difficult = 1 GROUP BY userid",
+            $params2
+        );
+        $last = $DB->get_records_sql_menu(
+            "SELECT userid, MAX(timestart) FROM {vocabmastery_attempt}
+                WHERE vocabmasteryid = :vid AND userid $in GROUP BY userid",
+            $params2
+        );
         $out = [];
         foreach ($userids as $uid) {
             $s = $stats[$uid] ?? null;
@@ -132,8 +141,10 @@ class report {
      * @return string[]
      */
     public function identity_fields(): array {
-        $standard = ['email', 'idnumber', 'username', 'institution', 'department', 'phone1', 'phone2', 'city',
-            'country', 'address'];
+        $standard = [
+            'email', 'idnumber', 'username', 'institution', 'department', 'phone1', 'phone2', 'city',
+            'country', 'address',
+        ];
         $fields = \core_user\fields::for_identity($this->instance->context, false)->get_required_fields();
         return array_values(array_intersect($fields, $standard));
     }
@@ -145,13 +156,16 @@ class report {
      */
     public function countable_topicids(): array {
         global $DB;
-        return array_map('intval', $DB->get_fieldset_sql(
-            "SELECT DISTINCT s.topicid
-               FROM {vocabmastery_item} i
-               JOIN {vocabmastery_set} s ON s.id = i.setid
-              WHERE i.vocabmasteryid = :vid AND i.iscore = 1",
-            ['vid' => $this->instance->vm->id]
-        ));
+        return array_map(
+            'intval',
+            $DB->get_fieldset_sql(
+                "SELECT DISTINCT s.topicid
+                   FROM {vocabmastery_item} i
+                   JOIN {vocabmastery_set} s ON s.id = i.setid
+                  WHERE i.vocabmasteryid = :vid AND i.iscore = 1",
+                ['vid' => $this->instance->vm->id]
+            )
+        );
     }
 
     /**
@@ -276,8 +290,11 @@ class report {
         $struggling = [];
         [$in2, $p2] = $DB->get_in_or_equal(array_keys($rows), SQL_PARAMS_NAMED, 'it');
         [$in3, $p3] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED, 'us');
-        $struggling = $DB->get_records_sql_menu("SELECT itemid, COUNT(1) FROM {vocabmastery_itemstate}
-            WHERE itemid $in2 AND userid $in3 AND difficult = 1 GROUP BY itemid", $p2 + $p3);
+        $struggling = $DB->get_records_sql_menu(
+            "SELECT itemid, COUNT(1) FROM {vocabmastery_itemstate}
+                WHERE itemid $in2 AND userid $in3 AND difficult = 1 GROUP BY itemid",
+            $p2 + $p3
+        );
         $sets = $this->instance->get_all_sets();
         $topics = $this->instance->get_topics();
         $out = [];

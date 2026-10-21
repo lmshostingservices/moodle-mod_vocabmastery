@@ -25,11 +25,14 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Settings page and the activation page live together in one category.
-$ADMIN->add('modsettings', new admin_category(
-    'modvocabmasteryfolder',
-    new lang_string('pluginname', 'mod_vocabmastery'),
-    $module->is_enabled() === false
-));
+$ADMIN->add(
+    'modsettings',
+    new admin_category(
+        'modvocabmasteryfolder',
+        new lang_string('pluginname', 'mod_vocabmastery'),
+        $module->is_enabled() === false
+    )
+);
 $settings = new admin_settingpage(
     $section,
     get_string('settings', 'moodle'),
@@ -49,45 +52,58 @@ if ($ADMIN->fulltree) {
             ? (new moodle_url('/admin/settings.php', ['section' => 'local_aiconfig']))->out(false) : null,
         'activationurl' => (new moodle_url('/mod/vocabmastery/activation.php'))->out(false),
     ];
-    $settings->add(new admin_setting_heading(
-        'mod_vocabmastery/lmslabsheading',
-        get_string('lmslabs_heading', 'mod_vocabmastery'),
-        $OUTPUT->render_from_template('mod_vocabmastery/credentials_status', $statuscontext)
-    ));
-    $settings->add(new admin_setting_configtext(
-        'mod_vocabmastery/siteid',
-        get_string('lmslabs_siteid', 'mod_vocabmastery'),
-        get_string('lmslabs_local_desc', 'mod_vocabmastery'),
-        '',
-        PARAM_TEXT
-    ));
-    $settings->add(new admin_setting_configpasswordunmask(
-        'mod_vocabmastery/apikey',
-        get_string('lmslabs_apikey', 'mod_vocabmastery'),
-        get_string('lmslabs_local_desc', 'mod_vocabmastery'),
-        ''
-    ));
-    $settings->add(new admin_setting_heading(
-        'mod_vocabmastery/importheading',
-        get_string('importsettings', 'mod_vocabmastery'),
-        ''
-    ));
-    $settings->add(new admin_setting_configtextarea(
-        'mod_vocabmastery/importignorelines',
-        get_string('importignorelines', 'mod_vocabmastery'),
-        get_string('importignorelines_desc', 'mod_vocabmastery'),
-        '',
-        PARAM_TEXT
-    ));
+    $settings->add(
+        new admin_setting_heading(
+            'mod_vocabmastery/lmslabsheading',
+            get_string('lmslabs_heading', 'mod_vocabmastery'),
+            $OUTPUT->render_from_template('mod_vocabmastery/credentials_status', $statuscontext)
+        )
+    );
+    $settings->add(
+        new admin_setting_configtext(
+            'mod_vocabmastery/siteid',
+            get_string('lmslabs_siteid', 'mod_vocabmastery'),
+            get_string('lmslabs_local_desc', 'mod_vocabmastery'),
+            '',
+            PARAM_TEXT
+        )
+    );
+    $settings->add(
+        new admin_setting_configpasswordunmask(
+            'mod_vocabmastery/apikey',
+            get_string('lmslabs_apikey', 'mod_vocabmastery'),
+            get_string('lmslabs_local_desc', 'mod_vocabmastery'),
+            ''
+        )
+    );
+    $settings->add(
+        new admin_setting_heading(
+            'mod_vocabmastery/importheading',
+            get_string('importsettings', 'mod_vocabmastery'),
+            ''
+        )
+    );
+    $settings->add(
+        new admin_setting_configtextarea(
+            'mod_vocabmastery/importignorelines',
+            get_string('importignorelines', 'mod_vocabmastery'),
+            get_string('importignorelines_desc', 'mod_vocabmastery'),
+            '',
+            PARAM_TEXT
+        )
+    );
 }
 
 $ADMIN->add('modvocabmasteryfolder', $settings);
-$ADMIN->add('modvocabmasteryfolder', new admin_externalpage(
-    'mod_vocabmastery_activation',
-    new lang_string('act_title', 'mod_vocabmastery'),
-    new moodle_url('/mod/vocabmastery/activation.php'),
-    'moodle/site:config',
-    $module->is_enabled() === false
-));
+$ADMIN->add(
+    'modvocabmasteryfolder',
+    new admin_externalpage(
+        'mod_vocabmastery_activation',
+        new lang_string('act_title', 'mod_vocabmastery'),
+        new moodle_url('/mod/vocabmastery/activation.php'),
+        'moodle/site:config',
+        $module->is_enabled() === false
+    )
+);
 // Stop core adding the page a second time.
 $settings = null;

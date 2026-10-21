@@ -59,11 +59,14 @@ foreach ($instances as $inst) {
         format_string($inst->name),
         $inst->visible ? [] : ['class' => 'dimmed']
     );
-    $progress = new \mod_vocabmastery\progress(new \mod_vocabmastery\instance(
-        $DB->get_record('vocabmastery', ['id' => $inst->id]),
-        $cm,
-        $course
-    ), (int)$USER->id);
+    $progress = new \mod_vocabmastery\progress(
+        new \mod_vocabmastery\instance(
+            $DB->get_record('vocabmastery', ['id' => $inst->id]),
+            $cm,
+            $course
+        ),
+        (int)$USER->id
+    );
     $table->data[] = [$link, round($progress->overall_percent()) . '%'];
 }
 echo html_writer::table($table);

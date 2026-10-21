@@ -62,5 +62,19 @@ function xmldb_vocabmastery_upgrade($oldversion) {
         }
         upgrade_mod_savepoint(true, 2026092900, 'vocabmastery');
     }
+
+    if ($oldversion < 2026102100) {
+        // Backward progression within a level, and hiding answers after the mastery check.
+        $table = new xmldb_table('vocabmastery');
+        $field = new xmldb_field('openprevious', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0', 'unlockby');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        $field = new xmldb_field('testreview', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL, null, 'show', 'openprevious');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_mod_savepoint(true, 2026102100, 'vocabmastery');
+    }
     return true;
 }

@@ -51,10 +51,13 @@ class content {
      */
     public static function add_level(int $vmid, string $name, string $description = ''): int {
         global $DB;
-        return $DB->insert_record('vocabmastery_level', (object)[
-            'vocabmasteryid' => $vmid, 'name' => trim($name), 'description' => $description,
-            'sortorder' => self::next_sort('level', ['vocabmasteryid' => $vmid]),
-        ]);
+        return $DB->insert_record(
+            'vocabmastery_level',
+            (object)[
+                'vocabmasteryid' => $vmid, 'name' => trim($name), 'description' => $description,
+                'sortorder' => self::next_sort('level', ['vocabmasteryid' => $vmid]),
+            ]
+        );
     }
 
     /**
@@ -77,11 +80,14 @@ class content {
         string $notes = ''
     ): int {
         global $DB;
-        return $DB->insert_record('vocabmastery_topic', (object)[
-            'vocabmasteryid' => $vmid, 'levelid' => $levelid, 'name' => trim($name), 'description' => $description,
-            'teachernotes' => $notes, 'pathkey' => $pathkey,
-            'sortorder' => self::next_sort('topic', ['levelid' => $levelid]), 'timemodified' => time(),
-        ]);
+        return $DB->insert_record(
+            'vocabmastery_topic',
+            (object)[
+                'vocabmasteryid' => $vmid, 'levelid' => $levelid, 'name' => trim($name), 'description' => $description,
+                'teachernotes' => $notes, 'pathkey' => $pathkey,
+                'sortorder' => self::next_sort('topic', ['levelid' => $levelid]), 'timemodified' => time(),
+            ]
+        );
     }
 
     /**
@@ -112,10 +118,13 @@ class content {
      */
     public static function add_set(int $vmid, int $topicid, array $data): int {
         global $DB;
-        $rec = (object)array_merge([
-            'name' => '', 'instruction' => '', 'itemtype' => 'choice', 'answermode' => 'fixed', 'options' => '',
-            'numoptions' => 3, 'showtranslation' => 1, 'gated' => 1,
-        ], $data);
+        $rec = (object)array_merge(
+            [
+                'name' => '', 'instruction' => '', 'itemtype' => 'choice', 'answermode' => 'fixed', 'options' => '',
+                'numoptions' => 3, 'showtranslation' => 1, 'gated' => 1,
+            ],
+            $data
+        );
         $rec->vocabmasteryid = $vmid;
         $rec->topicid = $topicid;
         $rec->sortorder = self::next_sort('set', ['topicid' => $topicid]);
@@ -290,8 +299,14 @@ class content {
     public static function level_by_name(int $vmid, string $name): int {
         global $DB;
         $name = trim($name) ?: get_string('defaultlevel', 'mod_vocabmastery');
-        $id = $DB->get_field_select('vocabmastery_level', 'id', 'vocabmasteryid = :vid AND ' .
-            $DB->sql_equal('name', ':name', false), ['vid' => $vmid, 'name' => $name], IGNORE_MULTIPLE);
+        $id = $DB->get_field_select(
+            'vocabmastery_level',
+            'id',
+            'vocabmasteryid = :vid AND ' .
+                $DB->sql_equal('name', ':name', false),
+            ['vid' => $vmid, 'name' => $name],
+            IGNORE_MULTIPLE
+        );
         return $id ? (int)$id : self::add_level($vmid, $name);
     }
 
@@ -307,8 +322,14 @@ class content {
     public static function topic_by_name(int $vmid, int $levelid, string $name, int $pathkey = 0): int {
         global $DB;
         $name = trim($name) ?: get_string('defaulttopic', 'mod_vocabmastery');
-        $id = $DB->get_field_select('vocabmastery_topic', 'id', 'levelid = :levelid AND ' .
-            $DB->sql_equal('name', ':name', false), ['levelid' => $levelid, 'name' => $name], IGNORE_MULTIPLE);
+        $id = $DB->get_field_select(
+            'vocabmastery_topic',
+            'id',
+            'levelid = :levelid AND ' .
+                $DB->sql_equal('name', ':name', false),
+            ['levelid' => $levelid, 'name' => $name],
+            IGNORE_MULTIPLE
+        );
         return $id ? (int)$id : self::add_topic($vmid, $levelid, $name, $pathkey);
     }
 
@@ -324,8 +345,14 @@ class content {
     public static function set_by_name(int $vmid, int $topicid, string $name, array $defaults = []): int {
         global $DB;
         $name = trim($name) ?: get_string('defaultset', 'mod_vocabmastery');
-        $id = $DB->get_field_select('vocabmastery_set', 'id', 'topicid = :topicid AND ' .
-            $DB->sql_equal('name', ':name', false), ['topicid' => $topicid, 'name' => $name], IGNORE_MULTIPLE);
+        $id = $DB->get_field_select(
+            'vocabmastery_set',
+            'id',
+            'topicid = :topicid AND ' .
+                $DB->sql_equal('name', ':name', false),
+            ['topicid' => $topicid, 'name' => $name],
+            IGNORE_MULTIPLE
+        );
         return $id ? (int)$id : self::add_set($vmid, $topicid, ['name' => $name] + $defaults);
     }
 

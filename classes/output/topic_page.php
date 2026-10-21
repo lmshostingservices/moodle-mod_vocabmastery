@@ -141,14 +141,18 @@ class topic_page implements renderable, templatable {
         $besttest = $s->besttest >= 0 ? (int)round($s->besttest) : null;
         $unlockby = $vm->unlockby;
         $routes = [];
-        if ($s->passed) {
+        if ($s->passed || !empty($vm->openprevious)) {
             $topics = $this->instance->get_topics();
             foreach ($this->progress->routes_after($this->topicid) as $route) {
+                if (!$s->passed && $route['type'] !== 'backward') {
+                    // Before passing, only the way back within the level is offered.
+                    continue;
+                }
                 $t = $topics[$route['topicid']];
                 $routes[] = [
                     'type' => $route['type'],
                     'label' => get_string('route_' . $route['type'], $c),
-                    'icon' => icons::flag($route['type'] === 'vertical' ? 'down' : 'right'),
+                    'icon' => icons::flag(['vertical' => 'down', 'backward' => 'left'][$route['type']] ?? 'right'),
                     'name' => format_string($t->name),
                     'level' => format_string($this->instance->get_level((int)$t->levelid)->name),
                     'url' => $this->instance->url('view.php', ['topic' => $t->id])->out(false),

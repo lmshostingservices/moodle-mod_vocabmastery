@@ -38,7 +38,8 @@ const STRING_KEYS = ['mode_learn', 'mode_practice', 'mode_blitz', 'mode_streak',
     'correctanswer', 'appearsagain', 'streakmsg', 'questionnofm', 'cardnofm', 'blitzcorrect', 'blitzwrong',
     'blitzstreak', 'sessiondone', 'blitzdone', 'streakdone', 'learndone', 'testpassed', 'testnotyet', 'answeredcorrect',
     'accuracy', 'beststreakn', 'personalbest', 'previousbestn', 'againbtn', 'practisenmistakes', 'backtotopic',
-    'retrycheck', 'wherenext', 'route_horizontal', 'route_vertical', 'route_next', 'topicmasteredpct', 'masterynow',
+    'retrycheck', 'wherenext', 'route_horizontal', 'route_vertical', 'route_next', 'route_backward', 'res_tip_hidden',
+    'next_practisetopic', 'next_practisetopic_text', 'topicmasteredpct', 'masterynow',
     'yourmistakes', 'typeanswer', 'startpractice', 'loading', 'errorsaving', 'optionaltag', 'difficulttag', 'reviewedn',
     'backtooverview', 'yougot', 'res_excellent', 'res_great', 'res_solid', 'res_start', 'res_tip_excellent',
     'res_tip_great', 'res_tip_solid', 'res_tip_start', 'res_passed', 'res_notyet', 'completedin', 'lasttime', 'bigjump',
@@ -50,7 +51,7 @@ const STRING_KEYS = ['mode_learn', 'mode_practice', 'mode_blitz', 'mode_streak',
     'key_space', 'key_enter'];
 
 const ICONS = ['learn', 'practice', 'blitz', 'streak', 'difficult', 'test', 'check', 'close', 'hint', 'award', 'trophy',
-    'right', 'down'];
+    'right', 'down', 'left'];
 
 const TEMPLATES = ['shell', 'question', 'feedback', 'flashcard', 'stats', 'summary', 'message', 'report']
     .map((t) => `${COMPONENT}/trainer_${t}`);
@@ -810,6 +811,9 @@ const showSummary = (r) => {
     if (r.mode === 'test') {
         headline = r.passed ? str('res_passed') : str('res_notyet');
         tip = r.passed ? str('res_tip_excellent') : str('res_tip_start');
+        if (r.answershidden && !r.passed) {
+            tip = str('res_tip_hidden');
+        }
     } else if (r.mode === 'blitz') {
         hasring = false;
         big = String(r.correct);
@@ -873,6 +877,8 @@ const showSummary = (r) => {
             next = {title: str('next_check'), text: str('next_check_text', r.threshold), action: 'startcheck'};
         } else if (r.mode !== 'test') {
             next = {title: str('next_again'), text: str('next_again_text'), action: 'again'};
+        } else if (r.answershidden && !r.passed) {
+            next = {title: str('next_practisetopic'), text: str('next_practisetopic_text'), action: 'startpractice'};
         }
     }
     const actions = [];
@@ -935,7 +941,7 @@ const showSummary = (r) => {
         routes: showroutes ? r.routes.map((route) => ({
             url: route.url,
             type: route.type,
-            icon: icons[route.type === 'vertical' ? 'down' : 'right'],
+            icon: icons[{vertical: 'down', backward: 'left'}[route.type] || 'right'],
             label: str(`route_${route.type}`),
             name: `${route.level} · ${route.name}`,
         })) : [],

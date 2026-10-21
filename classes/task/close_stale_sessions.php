@@ -69,8 +69,13 @@ class close_stale_sessions extends \core\task\scheduled_task {
                 $closed++;
             } catch (\Throwable $e) {
                 // Learn session, or content gone: close it without scoring.
-                $DB->update_record('vocabmastery_attempt', (object)['id' => $a->id, 'finished' => 1,
-                    'timefinish' => time()]);
+                $DB->update_record(
+                    'vocabmastery_attempt',
+                    (object)[
+                        'id' => $a->id, 'finished' => 1,
+                        'timefinish' => time(),
+                    ]
+                );
                 mtrace('mod_vocabmastery: closed attempt ' . $a->id . ' without scoring: ' . $e->getMessage());
             }
         }

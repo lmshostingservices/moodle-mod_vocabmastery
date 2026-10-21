@@ -34,39 +34,92 @@ class backup_vocabmastery_activity_structure_step extends backup_activity_struct
     protected function define_structure() {
         $userinfo = $this->get_setting_value('userinfo');
 
-        $vm = new backup_nested_element('vocabmastery', ['id'], [
-            'name', 'intro', 'introformat', 'targetlanguage', 'nativelanguage', 'masterythreshold', 'itemcorrectrequired',
-            'itemstreakrequired', 'progressionmode', 'unlockby', 'testlength', 'enablelearn', 'requirelearn', 'enableblitz',
-            'blitzduration', 'blitzcountsmastery', 'enablestreak', 'enablehints', 'injectdifficult', 'colourscheme', 'grade',
-            'grademethod', 'completiontopics', 'completionalltopics', 'completionprogress', 'timecreated', 'timemodified',
-        ]);
+        $vm = new backup_nested_element(
+            'vocabmastery',
+            ['id'],
+            [
+                'name', 'intro', 'introformat', 'targetlanguage', 'nativelanguage', 'masterythreshold', 'itemcorrectrequired',
+                'itemstreakrequired', 'progressionmode', 'unlockby', 'openprevious', 'testreview', 'testlength',
+                'enablelearn', 'requirelearn', 'enableblitz',
+                'blitzduration', 'blitzcountsmastery', 'enablestreak', 'enablehints', 'injectdifficult', 'colourscheme', 'grade',
+                'grademethod', 'completiontopics', 'completionalltopics', 'completionprogress', 'timecreated', 'timemodified',
+            ]
+        );
         $levels = new backup_nested_element('levels');
         $level = new backup_nested_element('level', ['id'], ['name', 'description', 'sortorder']);
         $topics = new backup_nested_element('topics');
-        $topic = new backup_nested_element('topic', ['id'], ['name', 'description', 'teachernotes', 'pathkey', 'sortorder',
-            'timemodified']);
+        $topic = new backup_nested_element(
+            'topic',
+            ['id'],
+            [
+                'name', 'description', 'teachernotes', 'pathkey', 'sortorder',
+                'timemodified',
+            ]
+        );
         $sets = new backup_nested_element('sets');
-        $set = new backup_nested_element('set', ['id'], ['name', 'instruction', 'itemtype', 'answermode', 'options',
-            'numoptions', 'showtranslation', 'gated', 'sortorder', 'timemodified']);
+        $set = new backup_nested_element(
+            'set',
+            ['id'],
+            [
+                'name', 'instruction', 'itemtype', 'answermode', 'options',
+                'numoptions', 'showtranslation', 'gated', 'sortorder', 'timemodified',
+            ]
+        );
         $items = new backup_nested_element('items');
-        $item = new backup_nested_element('item', ['id'], ['prompt', 'correctvalue', 'altanswers', 'translation', 'plural',
-            'hint', 'explanation', 'iscore', 'sortorder', 'metadata', 'timecreated', 'timemodified']);
+        $item = new backup_nested_element(
+            'item',
+            ['id'],
+            [
+                'prompt', 'correctvalue', 'altanswers', 'translation', 'plural',
+                'hint', 'explanation', 'iscore', 'sortorder', 'metadata', 'timecreated', 'timemodified',
+            ]
+        );
 
         $topicstates = new backup_nested_element('topicstates');
-        $topicstate = new backup_nested_element('topicstate', ['id'], ['userid', 'topicid', 'mastery', 'besttest', 'passed',
-            'learned', 'timepassed', 'timemodified']);
+        $topicstate = new backup_nested_element(
+            'topicstate',
+            ['id'],
+            [
+                'userid', 'topicid', 'mastery', 'besttest', 'passed',
+                'learned', 'timepassed', 'timemodified',
+            ]
+        );
         $itemstates = new backup_nested_element('itemstates');
-        $itemstate = new backup_nested_element('itemstate', ['id'], ['userid', 'itemid', 'attempts', 'correct', 'wrong',
-            'streak', 'mastered', 'difficult', 'wasdifficult', 'lastseen']);
+        $itemstate = new backup_nested_element(
+            'itemstate',
+            ['id'],
+            [
+                'userid', 'itemid', 'attempts', 'correct', 'wrong',
+                'streak', 'mastered', 'difficult', 'wasdifficult', 'lastseen',
+            ]
+        );
         $attempts = new backup_nested_element('attempts');
-        $attempt = new backup_nested_element('attempt', ['id'], ['userid', 'topicid', 'setid', 'mode', 'itemids', 'total',
-            'correct', 'beststreak', 'score', 'passed', 'finished', 'timestart', 'timefinish']);
+        $attempt = new backup_nested_element(
+            'attempt',
+            ['id'],
+            [
+                'userid', 'topicid', 'setid', 'mode', 'itemids', 'total',
+                'correct', 'beststreak', 'score', 'passed', 'finished', 'timestart', 'timefinish',
+            ]
+        );
         $responses = new backup_nested_element('responses');
-        $response = new backup_nested_element('response', ['id'], ['userid', 'itemid', 'mode', 'response', 'correct',
-            'hinted', 'responsetime', 'timecreated']);
+        $response = new backup_nested_element(
+            'response',
+            ['id'],
+            [
+                'userid', 'itemid', 'mode', 'response', 'correct',
+                'hinted', 'responsetime', 'timecreated',
+            ]
+        );
         $flags = new backup_nested_element('flags');
-        $flag = new backup_nested_element('flag', ['id'], ['itemid', 'userid', 'reason', 'commenttext', 'resolved',
-            'timecreated', 'timemodified']);
+        $flag = new backup_nested_element(
+            'flag',
+            ['id'],
+            [
+                'itemid', 'userid', 'reason', 'commenttext', 'resolved',
+                'timecreated', 'timemodified',
+            ]
+        );
 
         $vm->add_child($levels);
         $levels->add_child($level);

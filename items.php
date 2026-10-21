@@ -170,10 +170,14 @@ if ($items) {
             'word' => $item->prompt . ' → ' . $item->correctvalue,
             'reason' => get_string('reason_' . $f->reason, $c),
             'comment' => (string)$f->commenttext,
-            'by' => get_string('reports_by', $c, (object)['name' => fullname($f), 'date' => userdate(
-                $f->timecreated,
-                get_string('strftimedatetimeshort', 'langconfig')
-            )]),
+            'by' => get_string(
+                'reports_by',
+                $c,
+                (object)['name' => fullname($f), 'date' => userdate(
+                    $f->timecreated,
+                    get_string('strftimedatetimeshort', 'langconfig')
+                )]
+            ),
         ];
     }
 }
@@ -183,8 +187,10 @@ $othersets = [];
 foreach ($instance->get_topics() as $t) {
     foreach ($instance->get_topic_sets((int)$t->id) as $s) {
         if ((int)$s->id !== $setid) {
-            $othersets[] = ['value' => (int)$s->id, 'label' => format_string($instance->get_level((int)$t->levelid)->name) .
-                ' · ' . format_string($t->name) . ' · ' . format_string($s->name)];
+            $othersets[] = [
+                'value' => (int)$s->id, 'label' => format_string($instance->get_level((int)$t->levelid)->name) .
+                ' · ' . format_string($t->name) . ' · ' . format_string($s->name),
+            ];
         }
     }
 }
@@ -206,8 +212,15 @@ foreach ($items as $item) {
         'prompt' => $item->prompt,
         'iscore' => (bool)$item->iscore,
         'flagged' => !empty($flagged[(int)$item->id]),
-        'cells' => array_map(fn($f) => ['name' => "items[{$item->id}][$f]", 'value' => (string)$item->$f, 'field' => $f,
-            'label' => $labels[$f]], $fields),
+        'cells' => array_map(
+            fn($f) => [
+                'name' => "items[{$item->id}][$f]",
+                'value' => (string)$item->$f,
+                'field' => $f,
+                'label' => $labels[$f],
+            ],
+            $fields
+        ),
     ];
 }
 $newrows = [];
@@ -225,22 +238,31 @@ $info[] = $set->gated ? get_string('gated', $c) : get_string('notgated', $c);
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading(format_string($level->name) . ' · ' . format_string($topic->name) . ' · ' . format_string($set->name));
-echo $OUTPUT->render_from_template('mod_vocabmastery/items', [
-    'manageurl' => $instance->url('manage.php')->out(false),
-    'info' => implode(' · ', $info),
-    'seturl' => $instance->url('manage.php', ['action' => 'editset', 'setid' => $setid])->out(false),
-    'actionurl' => $url->out(false),
-    'sesskey' => sesskey(),
-    'count' => get_string('nitems', $c, (object)['total' => count($items),
-        'core' => count(array_filter($items, fn($i) => $i->iscore))]),
-    'bulk' => $bulk,
-    'hastargets' => (bool)$othersets,
-    'targets' => $othersets,
-    'fields' => array_map(fn($f) => ['field' => $f, 'label' => $labels[$f]], $fields),
-    'items' => $itemsdata,
-    'newrows' => $newrows,
-    'hasreports' => (bool)$reports,
-    'reportstitle' => get_string('reports_open', $c, count($reports)),
-    'reports' => $reports,
-]);
+echo $OUTPUT->render_from_template(
+    'mod_vocabmastery/items',
+    [
+        'manageurl' => $instance->url('manage.php')->out(false),
+        'info' => implode(' · ', $info),
+        'seturl' => $instance->url('manage.php', ['action' => 'editset', 'setid' => $setid])->out(false),
+        'actionurl' => $url->out(false),
+        'sesskey' => sesskey(),
+        'count' => get_string(
+            'nitems',
+            $c,
+            (object)[
+                'total' => count($items),
+                'core' => count(array_filter($items, fn($i) => $i->iscore)),
+            ]
+        ),
+        'bulk' => $bulk,
+        'hastargets' => (bool)$othersets,
+        'targets' => $othersets,
+        'fields' => array_map(fn($f) => ['field' => $f, 'label' => $labels[$f]], $fields),
+        'items' => $itemsdata,
+        'newrows' => $newrows,
+        'hasreports' => (bool)$reports,
+        'reportstitle' => get_string('reports_open', $c, count($reports)),
+        'reports' => $reports,
+    ]
+);
 echo $OUTPUT->footer();

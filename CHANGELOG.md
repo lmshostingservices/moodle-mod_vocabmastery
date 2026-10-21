@@ -2,6 +2,31 @@
 
 All notable changes to mod_vocabmastery are documented here.
 
+## [v1.1.0] - 2026-10-21
+
+### Added
+- Backward progression within a level: new activity setting "Also open earlier topics in the same
+  level" (Progression, off by default). Once a topic is open, every earlier topic in its level opens
+  too, e.g. a learner in B1 Lektion 3 can also go back to B1 Lektion 2 and 1. Forward and downward
+  progression are unchanged. Topic pages and results offer "Go back in this level".
+- New activity setting "After the mastery check" (Mastery): "Show answers" (default, as before) or
+  "Hide answers (score only)". When hidden, learners see their score, pass/fail and per-set totals,
+  but not which words were wrong or the correct answers; the server does not send them to the
+  browser. Learners are pointed to practise the topic instead.
+
+### Changed
+- Database: two new fields on `vocabmastery` (`openprevious`, `testreview`), added by an upgrade step
+  with defaults that keep existing activities working exactly as before. Both are included in backups.
+
+## [v1.0.2] - 2026-09-30
+
+### Changed
+- Code formatting only, for the LMS Labs release checks: in every multi-line function call the
+  opening parenthesis now ends its line, each argument is on its own line and the closing
+  parenthesis is on a line by itself. Wrapped array arguments are laid out one block per array.
+  No behaviour, database or language changes (verified by comparing the PHP token streams of
+  1.0.1 and 1.0.2: only whitespace, trailing commas and SQL indentation differ).
+
 ## [v1.0.1] - 2026-09-30
 
 ### Added

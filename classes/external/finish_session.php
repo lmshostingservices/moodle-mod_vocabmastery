@@ -38,11 +38,13 @@ class finish_session extends external_api {
      * @return external_function_parameters
      */
     public static function execute_parameters(): external_function_parameters {
-        return new external_function_parameters([
-            'cmid' => new external_value(PARAM_INT, 'Course module id'),
-            'attemptid' => new external_value(PARAM_INT, 'Attempt id'),
-            'beststreak' => new external_value(PARAM_INT, 'Best streak seen by client', VALUE_DEFAULT, 0),
-        ]);
+        return new external_function_parameters(
+            [
+                'cmid' => new external_value(PARAM_INT, 'Course module id'),
+                'attemptid' => new external_value(PARAM_INT, 'Attempt id'),
+                'beststreak' => new external_value(PARAM_INT, 'Best streak seen by client', VALUE_DEFAULT, 0),
+            ]
+        );
     }
 
     /**
@@ -70,50 +72,69 @@ class finish_session extends external_api {
      * @return external_single_structure
      */
     public static function execute_returns(): external_single_structure {
-        return new external_single_structure([
-            'mode' => new external_value(PARAM_ALPHA, 'Mode'),
-            'total' => new external_value(PARAM_INT, 'Answers given'),
-            'questioncount' => new external_value(PARAM_INT, 'Questions in session'),
-            'correct' => new external_value(PARAM_INT, 'Correct answers'),
-            'score' => new external_value(PARAM_FLOAT, 'Percent'),
-            'beststreak' => new external_value(PARAM_INT, 'Best streak'),
-            'personalbest' => new external_value(PARAM_BOOL, 'New personal best'),
-            'previousbest' => new external_value(PARAM_INT, 'Previous best'),
-            'passed' => new external_value(PARAM_BOOL, 'Mastery check passed'),
-            'topicpassed' => new external_value(PARAM_BOOL, 'Topic is passed'),
-            'newlypassed' => new external_value(PARAM_BOOL, 'Topic passed just now'),
-            'mastery' => new external_value(PARAM_FLOAT, 'Topic mastery percent'),
-            'threshold' => new external_value(PARAM_INT, 'Threshold'),
-            'mistakes' => new external_multiple_structure(new external_single_structure([
-                'itemid' => new external_value(PARAM_INT, 'Item'),
-                'prompt' => new external_value(PARAM_TEXT, 'Prompt'),
-                'correct' => new external_value(PARAM_TEXT, 'Correct'),
-                'translation' => new external_value(PARAM_TEXT, 'Translation'),
-            ])),
-            'routes' => new external_multiple_structure(new external_single_structure([
-                'type' => new external_value(PARAM_ALPHA, 'horizontal, vertical or next'),
-                'topicid' => new external_value(PARAM_INT, 'Topic'),
-                'name' => new external_value(PARAM_TEXT, 'Topic name'),
-                'level' => new external_value(PARAM_TEXT, 'Level name'),
-                'url' => new external_value(PARAM_URL, 'Link'),
-            ])),
-            'seconds' => new external_value(PARAM_INT, 'Session length in seconds'),
-            'previousscore' => new external_value(PARAM_FLOAT, 'Score of the previous session of this kind, -1 if none'),
-            'answers' => new external_multiple_structure(new external_single_structure([
-                'itemid' => new external_value(PARAM_INT, 'Item'),
-                'prompt' => new external_value(PARAM_TEXT, 'Prompt'),
-                'correct' => new external_value(PARAM_TEXT, 'Correct answer'),
-                'given' => new external_value(PARAM_TEXT, 'First answer given, empty if unanswered'),
-                'iscorrect' => new external_value(PARAM_BOOL, 'First answer was right'),
-                'translation' => new external_value(PARAM_TEXT, 'Translation'),
-                'setname' => new external_value(PARAM_TEXT, 'Set'),
-                'prefix' => new external_value(PARAM_BOOL, 'Show answer before the word (article style)'),
-            ])),
-            'sets' => new external_multiple_structure(new external_single_structure([
-                'name' => new external_value(PARAM_TEXT, 'Set'),
-                'correct' => new external_value(PARAM_INT, 'Right first time'),
-                'total' => new external_value(PARAM_INT, 'Words'),
-            ])),
-        ]);
+        return new external_single_structure(
+            [
+                'mode' => new external_value(PARAM_ALPHA, 'Mode'),
+                'total' => new external_value(PARAM_INT, 'Answers given'),
+                'questioncount' => new external_value(PARAM_INT, 'Questions in session'),
+                'correct' => new external_value(PARAM_INT, 'Correct answers'),
+                'score' => new external_value(PARAM_FLOAT, 'Percent'),
+                'beststreak' => new external_value(PARAM_INT, 'Best streak'),
+                'personalbest' => new external_value(PARAM_BOOL, 'New personal best'),
+                'previousbest' => new external_value(PARAM_INT, 'Previous best'),
+                'passed' => new external_value(PARAM_BOOL, 'Mastery check passed'),
+                'topicpassed' => new external_value(PARAM_BOOL, 'Topic is passed'),
+                'newlypassed' => new external_value(PARAM_BOOL, 'Topic passed just now'),
+                'mastery' => new external_value(PARAM_FLOAT, 'Topic mastery percent'),
+                'threshold' => new external_value(PARAM_INT, 'Threshold'),
+                'mistakes' => new external_multiple_structure(
+                    new external_single_structure(
+                        [
+                            'itemid' => new external_value(PARAM_INT, 'Item'),
+                            'prompt' => new external_value(PARAM_TEXT, 'Prompt'),
+                            'correct' => new external_value(PARAM_TEXT, 'Correct'),
+                            'translation' => new external_value(PARAM_TEXT, 'Translation'),
+                        ]
+                    )
+                ),
+                'routes' => new external_multiple_structure(
+                    new external_single_structure(
+                        [
+                            'type' => new external_value(PARAM_ALPHA, 'horizontal, vertical or next'),
+                            'topicid' => new external_value(PARAM_INT, 'Topic'),
+                            'name' => new external_value(PARAM_TEXT, 'Topic name'),
+                            'level' => new external_value(PARAM_TEXT, 'Level name'),
+                            'url' => new external_value(PARAM_URL, 'Link'),
+                        ]
+                    )
+                ),
+                'seconds' => new external_value(PARAM_INT, 'Session length in seconds'),
+                'previousscore' => new external_value(PARAM_FLOAT, 'Score of the previous session of this kind, -1 if none'),
+                'answers' => new external_multiple_structure(
+                    new external_single_structure(
+                        [
+                            'itemid' => new external_value(PARAM_INT, 'Item'),
+                            'prompt' => new external_value(PARAM_TEXT, 'Prompt'),
+                            'correct' => new external_value(PARAM_TEXT, 'Correct answer'),
+                            'given' => new external_value(PARAM_TEXT, 'First answer given, empty if unanswered'),
+                            'iscorrect' => new external_value(PARAM_BOOL, 'First answer was right'),
+                            'translation' => new external_value(PARAM_TEXT, 'Translation'),
+                            'setname' => new external_value(PARAM_TEXT, 'Set'),
+                            'prefix' => new external_value(PARAM_BOOL, 'Show answer before the word (article style)'),
+                        ]
+                    )
+                ),
+                'sets' => new external_multiple_structure(
+                    new external_single_structure(
+                        [
+                            'name' => new external_value(PARAM_TEXT, 'Set'),
+                            'correct' => new external_value(PARAM_INT, 'Right first time'),
+                            'total' => new external_value(PARAM_INT, 'Words'),
+                        ]
+                    )
+                ),
+                'answershidden' => new external_value(PARAM_BOOL, 'Answers are hidden after this mastery check'),
+            ]
+        );
     }
 }

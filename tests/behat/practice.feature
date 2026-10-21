@@ -37,3 +37,22 @@ Feature: Learners practise vocabulary and see their results
     Then I should see "Excellent!"
     And I should see "Review answers"
     And the page should meet accessibility standards with "wcag131, wcag141, wcag412" extra tests
+
+  @javascript
+  Scenario: Answers can be hidden after the mastery check
+    Given the following "activities" exist:
+      | activity     | name        | course | idnumber | testreview |
+      | vocabmastery | Check only  | G1     | vocab2   | hide       |
+    And the following "mod_vocabmastery > words" exist:
+      | activity | topic     | prompt | answer |
+      | vocab2   | Lektion 1 | Vater  | der    |
+      | vocab2   | Lektion 1 | Hund   | der    |
+    And I am on the "Check only" "vocabmastery activity" page logged in as "student1"
+    And I click on "Lektion 1" "link"
+    When I click on "[data-mode='test']" "css_element"
+    And I answer "die" to every vocabulary question
+    Then I should see "Not yet"
+    And I should see "Your teacher has hidden the answers for this check."
+    And I should see "Practise this topic"
+    And I should not see "Review answers"
+    And "Vater" "text" should not exist in the ".vm-res" "css_element"

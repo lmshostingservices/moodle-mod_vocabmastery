@@ -30,20 +30,28 @@ class table_parser {
     const MAX_COLUMNS = 30;
 
     /** Fields a column can map to. */
-    const FIELDS = ['ignore', 'correctvalue', 'prompt', 'translation', 'plural', 'altanswers', 'hint', 'explanation',
-        'iscore', 'level', 'topic', 'set', 'source', 'gated', 'answermode', 'instruction'];
+    const FIELDS = [
+        'ignore', 'correctvalue', 'prompt', 'translation', 'plural', 'altanswers', 'hint', 'explanation',
+        'iscore', 'level', 'topic', 'set', 'source', 'gated', 'answermode', 'instruction',
+    ];
 
     /** Fields that describe the set rather than the word. */
     const SET_FIELDS = ['gated', 'answermode', 'instruction'];
 
     /** Header synonyms (lower case) => field. */
     const HEADERS = [
-        'correctvalue' => ['answer', 'antwort', 'artikel', 'article', 'correct', 'correct answer', 'gender', 'genus',
-            'präposition', 'praeposition', 'preposition', 'button', 'buttons', 'lösung', 'solution'],
-        'prompt' => ['prompt', 'word', 'wort', 'nomen', 'noun', 'verb', 'term', 'begriff', 'question', 'frage',
-            'verb / ausdruck', 'verb (reflexiv)', 'vocabulary', 'item', 'infinitive', 'infinitiv'],
-        'translation' => ['translation', 'englisch', 'english', 'übersetzung', 'uebersetzung', 'meaning', 'bedeutung',
-            'native', 'native language'],
+        'correctvalue' => [
+            'answer', 'antwort', 'artikel', 'article', 'correct', 'correct answer', 'gender', 'genus',
+            'präposition', 'praeposition', 'preposition', 'button', 'buttons', 'lösung', 'solution',
+        ],
+        'prompt' => [
+            'prompt', 'word', 'wort', 'nomen', 'noun', 'verb', 'term', 'begriff', 'question', 'frage',
+            'verb / ausdruck', 'verb (reflexiv)', 'vocabulary', 'item', 'infinitive', 'infinitiv',
+        ],
+        'translation' => [
+            'translation', 'englisch', 'english', 'übersetzung', 'uebersetzung', 'meaning', 'bedeutung',
+            'native', 'native language',
+        ],
         'plural' => ['plural', 'pl', 'pl.'],
         'altanswers' => ['alternatives', 'alternative answers', 'also accept', 'alt'],
         'hint' => ['hint', 'tipp', 'hinweis'],
@@ -84,10 +92,12 @@ class table_parser {
                 if (trim($line) === '') {
                     continue;
                 }
-                $rows[] = array_values(array_filter(
-                    array_map('trim', preg_split('/\s{2,}/', trim($line))),
-                    fn($c) => $c !== ''
-                ));
+                $rows[] = array_values(
+                    array_filter(
+                        array_map('trim', preg_split('/\s{2,}/', trim($line))),
+                        fn($c) => $c !== ''
+                    )
+                );
             }
         } else {
             $fh = fopen('php://temp', 'r+');

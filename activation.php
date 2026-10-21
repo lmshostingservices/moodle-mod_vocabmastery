@@ -75,16 +75,19 @@ if ($action !== '') {
                 redirect($url, $msg, null, $type);
             }
             echo $OUTPUT->header();
-            echo $OUTPUT->render_from_template('mod_vocabmastery/activation_confirm', [
-                'actionurl' => $url->out(false),
-                'sesskey' => sesskey(),
-                'credits' => $live['credits'],
-                'free' => $live['credits'] === 0,
-                'releasesha' => $live['sha256'],
-                'releaseshort' => substr($live['sha256'], 0, 12),
-                'balance' => $state['credits'] === 'unlimited' ? get_string('act_unlimited', $c) : $state['credits'],
-                'hasbalance' => $state['credits'] !== '',
-            ]);
+            echo $OUTPUT->render_from_template(
+                'mod_vocabmastery/activation_confirm',
+                [
+                    'actionurl' => $url->out(false),
+                    'sesskey' => sesskey(),
+                    'credits' => $live['credits'],
+                    'free' => $live['credits'] === 0,
+                    'releasesha' => $live['sha256'],
+                    'releaseshort' => substr($live['sha256'], 0, 12),
+                    'balance' => $state['credits'] === 'unlimited' ? get_string('act_unlimited', $c) : $state['credits'],
+                    'hasbalance' => $state['credits'] !== '',
+                ]
+            );
             echo $OUTPUT->footer();
             die;
         case 'unlock':
@@ -117,34 +120,37 @@ if ($status['centralinstalled']) {
     $centralurl = (new moodle_url('/admin/settings.php', ['section' => 'local_aiconfig']))->out(false);
 }
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('mod_vocabmastery/activation', [
-    'actionurl' => $url->out(false),
-    'sesskey' => sesskey(),
-    'sourcecentral' => $status['source'] === \mod_vocabmastery\local\credentials::SOURCE_CENTRAL,
-    'sourcelocal' => $status['source'] === \mod_vocabmastery\local\credentials::SOURCE_LOCAL,
-    'sourcenone' => !$hascreds,
-    'siteid' => $status['siteid'],
-    'centralurl' => $centralurl,
-    'localurl' => (new moodle_url('/admin/settings.php', ['section' => 'modsettingvocabmastery']))->out(false),
-    'statelabel' => get_string($statelabels[$state['state']] ?? 'act_state_notchecked', $c),
-    'stateclass' => [
-        activation::STATE_UNLOCKED => 'bg-success text-white',
-        activation::STATE_LOCKED => 'bg-warning text-dark',
-        activation::STATE_UNVERIFIED => 'bg-danger text-white',
-    ][$state['state']] ?? 'bg-secondary text-white',
-    'checked' => $state['checked'] ? userdate($state['checked']) : '',
-    'unlockedat' => $state['unlockedat'],
-    'entitlementsource' => $state['source'],
-    'balance' => $state['credits'] === 'unlimited' ? get_string('act_unlimited', $c) : $state['credits'],
-    'hasbalance' => $state['credits'] !== '',
-    'pending' => $state['pending'],
-    'haslive' => $live && $live['ok'],
-    'price' => $live['credits'] ?? '',
-    'pricefree' => ($live['credits'] ?? null) === 0,
-    'releaseshort' => $live ? substr($live['sha256'], 0, 12) : '',
-    'livereason' => $live && !$live['ok'] ? get_string('act_result_' . $live['reason'], $c) : '',
-    'cancheck' => $hascreds,
-    'canunlock' => $hascreds && !$state['pending'] && $state['state'] !== activation::STATE_UNLOCKED && $live && $live['ok'],
-    'isunlocked' => $state['state'] === activation::STATE_UNLOCKED,
-]);
+echo $OUTPUT->render_from_template(
+    'mod_vocabmastery/activation',
+    [
+        'actionurl' => $url->out(false),
+        'sesskey' => sesskey(),
+        'sourcecentral' => $status['source'] === \mod_vocabmastery\local\credentials::SOURCE_CENTRAL,
+        'sourcelocal' => $status['source'] === \mod_vocabmastery\local\credentials::SOURCE_LOCAL,
+        'sourcenone' => !$hascreds,
+        'siteid' => $status['siteid'],
+        'centralurl' => $centralurl,
+        'localurl' => (new moodle_url('/admin/settings.php', ['section' => 'modsettingvocabmastery']))->out(false),
+        'statelabel' => get_string($statelabels[$state['state']] ?? 'act_state_notchecked', $c),
+        'stateclass' => [
+            activation::STATE_UNLOCKED => 'bg-success text-white',
+            activation::STATE_LOCKED => 'bg-warning text-dark',
+            activation::STATE_UNVERIFIED => 'bg-danger text-white',
+        ][$state['state']] ?? 'bg-secondary text-white',
+        'checked' => $state['checked'] ? userdate($state['checked']) : '',
+        'unlockedat' => $state['unlockedat'],
+        'entitlementsource' => $state['source'],
+        'balance' => $state['credits'] === 'unlimited' ? get_string('act_unlimited', $c) : $state['credits'],
+        'hasbalance' => $state['credits'] !== '',
+        'pending' => $state['pending'],
+        'haslive' => $live && $live['ok'],
+        'price' => $live['credits'] ?? '',
+        'pricefree' => ($live['credits'] ?? null) === 0,
+        'releaseshort' => $live ? substr($live['sha256'], 0, 12) : '',
+        'livereason' => $live && !$live['ok'] ? get_string('act_result_' . $live['reason'], $c) : '',
+        'cancheck' => $hascreds,
+        'canunlock' => $hascreds && !$state['pending'] && $state['state'] !== activation::STATE_UNLOCKED && $live && $live['ok'],
+        'isunlocked' => $state['state'] === activation::STATE_UNLOCKED,
+    ]
+);
 echo $OUTPUT->footer();

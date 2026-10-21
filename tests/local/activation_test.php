@@ -62,10 +62,12 @@ final class activation_test extends \advanced_testcase {
      * @return array
      */
     protected static function entry(int $credits = 50, string $sha = self::SHA): array {
-        return ['version' => '0.9.2', 'numericVersion' => '2026092801', 'status' => 'ready',
+        return [
+            'version' => '0.9.2', 'numericVersion' => '2026092801', 'status' => 'ready',
             'component' => 'mod_vocabmastery', 'zipExists' => true, 'credits' => $credits, 'creditsRequired' => $credits,
             'acquisitionMode' => 'credit-unlock', 'sha256' => $sha,
-            'downloadUrl' => 'https://lms-labs.com/api/downloads/vocabmastery?sha256=' . $sha];
+            'downloadUrl' => 'https://lms-labs.com/api/downloads/vocabmastery?sha256=' . $sha,
+        ];
     }
 
     /**
@@ -76,11 +78,19 @@ final class activation_test extends \advanced_testcase {
      * @param array $override fields to change in the vocabmastery entry
      */
     protected function manifest(int $credits = 50, string $sha = self::SHA, array $override = []): void {
-        $this->fake->add('/api/plugin-versions', 200, ['plugins' => [
-            'block_other' => ['component' => 'block_other', 'status' => 'ready', 'sha256' => str_repeat('a', 64),
-                'creditsRequired' => 10],
-            'mod_vocabmastery' => array_merge(self::entry($credits, $sha), $override),
-        ]]);
+        $this->fake->add(
+            '/api/plugin-versions',
+            200,
+            [
+                'plugins' => [
+                    'block_other' => [
+                        'component' => 'block_other', 'status' => 'ready', 'sha256' => str_repeat('a', 64),
+                        'creditsRequired' => 10,
+                    ],
+                    'mod_vocabmastery' => array_merge(self::entry($credits, $sha), $override),
+                ],
+            ]
+        );
     }
 
     public function test_check_locked(): void {
@@ -95,8 +105,14 @@ final class activation_test extends \advanced_testcase {
     }
 
     public function test_check_unlocked_with_unlimited_balance(): void {
-        $this->fake->add('/api/plugin-unlock/verify', 200, ['unlocked' => true, 'credits' => 'unlimited',
-            'unlockedAt' => '2026-09-28T10:00:00Z', 'entitlementSource' => 'purchase']);
+        $this->fake->add(
+            '/api/plugin-unlock/verify',
+            200,
+            [
+                'unlocked' => true, 'credits' => 'unlimited',
+                'unlockedAt' => '2026-09-28T10:00:00Z', 'entitlementSource' => 'purchase',
+            ]
+        );
         $this->assertSame('unlocked', (new activation($this->fake))->check()['outcome']);
         $state = activation::get_state();
         $this->assertSame(activation::STATE_UNLOCKED, $state['state']);
@@ -156,16 +172,27 @@ final class activation_test extends \advanced_testcase {
 
     public function test_unlock_charges_live_price_once(): void {
         $this->manifest(50);
-        $this->fake->add('/api/plugin-unlock', 200, ['success' => true, 'creditsConsumed' => 50,
-            'entitlementSource' => 'credits', 'remainingCredits' => 70, 'message' => 'Plugin unlocked',
-            'downloadUrl' => 'https://lms-labs.com/api/downloads/vocabmastery']);
+        $this->fake->add(
+            '/api/plugin-unlock',
+            200,
+            [
+                'success' => true, 'creditsConsumed' => 50,
+                'entitlementSource' => 'credits', 'remainingCredits' => 70, 'message' => 'Plugin unlocked',
+                'downloadUrl' => 'https://lms-labs.com/api/downloads/vocabmastery',
+            ]
+        );
         $result = (new activation($this->fake))->unlock(self::SHA, 50);
         $this->assertSame('unlocked', $result['outcome']);
         $this->assertSame(50, $result['charged']);
         $sent = $this->fake->sent('/api/plugin-unlock');
         $this->assertCount(1, $sent);
-        $this->assertSame(['pluginId' => 'vocabmastery', 'pluginComponent' => 'mod_vocabmastery', 'siteId' => 'SITE-1',
-            'apiKey' => self::KEY, 'releaseSha256' => self::SHA, 'expectedCredits' => 50], $sent[0]['json']);
+        $this->assertSame(
+            [
+                'pluginId' => 'vocabmastery', 'pluginComponent' => 'mod_vocabmastery', 'siteId' => 'SITE-1',
+                'apiKey' => self::KEY, 'releaseSha256' => self::SHA, 'expectedCredits' => 50,
+            ],
+            $sent[0]['json']
+        );
         $this->assertSame('POST', $sent[0]['method']);
         $this->assertSame('https://lms-labs.com/api/plugin-unlock', $sent[0]['url']);
         $state = activation::get_state();
@@ -180,8 +207,14 @@ final class activation_test extends \advanced_testcase {
     public function test_already_unlocked_is_not_a_new_debit(): void {
         $this->manifest(50);
         // The creditsConsumed value here describes the original unlock, not a new charge.
-        $this->fake->add('/api/plugin-unlock', 200, ['success' => true, 'alreadyUnlocked' => true, 'creditsConsumed' => 50,
-            'entitlementSource' => 'credits', 'remainingCredits' => 120, 'message' => 'Already unlocked']);
+        $this->fake->add(
+            '/api/plugin-unlock',
+            200,
+            [
+                'success' => true, 'alreadyUnlocked' => true, 'creditsConsumed' => 50,
+                'entitlementSource' => 'credits', 'remainingCredits' => 120, 'message' => 'Already unlocked',
+            ]
+        );
         $result = (new activation($this->fake))->unlock(self::SHA, 50);
         $this->assertSame('alreadyunlocked', $result['outcome']);
         $this->assertSame(0, $result['charged']);
@@ -194,8 +227,14 @@ final class activation_test extends \advanced_testcase {
         foreach (['marketplace', 'purchase'] as $source) {
             set_config('act_state', '', 'mod_vocabmastery');
             $this->manifest(50);
-            $this->fake->add('/api/plugin-unlock', 200, ['success' => true, 'creditsConsumed' => 0,
-                'entitlementSource' => $source, 'remainingCredits' => 120, 'message' => 'Restored']);
+            $this->fake->add(
+                '/api/plugin-unlock',
+                200,
+                [
+                    'success' => true, 'creditsConsumed' => 0,
+                    'entitlementSource' => $source, 'remainingCredits' => 120, 'message' => 'Restored',
+                ]
+            );
             $result = (new activation($this->fake))->unlock(self::SHA, 50);
             $this->assertSame('restored', $result['outcome'], $source);
             $this->assertSame(0, $result['charged']);
@@ -205,8 +244,14 @@ final class activation_test extends \advanced_testcase {
 
     public function test_insufficient_balance(): void {
         $this->manifest(50);
-        $this->fake->add('/api/plugin-unlock', 402, ['success' => false, 'remainingCredits' => 20,
-            'message' => 'Insufficient credits']);
+        $this->fake->add(
+            '/api/plugin-unlock',
+            402,
+            [
+                'success' => false, 'remainingCredits' => 20,
+                'message' => 'Insufficient credits',
+            ]
+        );
         $result = (new activation($this->fake))->unlock(self::SHA, 50);
         $this->assertSame('insufficient', $result['outcome']);
         $this->assertSame(50, $result['required']);
@@ -232,8 +277,14 @@ final class activation_test extends \advanced_testcase {
 
     public function test_server_stale_credit_price(): void {
         $this->manifest(50);
-        $this->fake->add('/api/plugin-unlock', 409, ['success' => false, 'error' => 'stale_credit_price',
-            'message' => 'The credit price has changed.']);
+        $this->fake->add(
+            '/api/plugin-unlock',
+            409,
+            [
+                'success' => false, 'error' => 'stale_credit_price',
+                'message' => 'The credit price has changed.',
+            ]
+        );
         $result = (new activation($this->fake))->unlock(self::SHA, 50);
         $this->assertSame('stale', $result['outcome']);
         $this->assertSame('The credit price has changed.', $result['message']);
@@ -243,8 +294,14 @@ final class activation_test extends \advanced_testcase {
 
     public function test_ambiguous_marketplace_entitlement(): void {
         $this->manifest(50);
-        $this->fake->add('/api/plugin-unlock', 409, ['success' => false, 'code' => 'marketplace_entitlement_ambiguous',
-            'message' => 'More than one purchase matches this site.']);
+        $this->fake->add(
+            '/api/plugin-unlock',
+            409,
+            [
+                'success' => false, 'code' => 'marketplace_entitlement_ambiguous',
+                'message' => 'More than one purchase matches this site.',
+            ]
+        );
         $result = (new activation($this->fake))->unlock(self::SHA, 50);
         $this->assertSame('ambiguous', $result['outcome']);
         [$msg] = activation::message($result);

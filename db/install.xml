@@ -18,6 +18,8 @@
         <FIELD NAME="itemstreakrequired" TYPE="int" LENGTH="3" NOTNULL="true" DEFAULT="2" SEQUENCE="false" COMMENT="Consecutive correct answers needed for item mastery"/>
         <FIELD NAME="progressionmode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="dual" SEQUENCE="false" COMMENT="linear, level, dual or open"/>
         <FIELD NAME="unlockby" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="test" SEQUENCE="false" COMMENT="practice, test or either"/>
+        <FIELD NAME="openprevious" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Also open earlier topics in the same level"/>
+        <FIELD NAME="testreview" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="show" SEQUENCE="false" COMMENT="show or hide answers after a mastery check"/>
         <FIELD NAME="testlength" TYPE="int" LENGTH="4" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Questions per mastery check, 0 = all core items"/>
         <FIELD NAME="enablelearn" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
         <FIELD NAME="requirelearn" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

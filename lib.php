@@ -189,8 +189,11 @@ function vocabmastery_get_user_grades($vm, $userid = 0) {
         $usersql = ' AND userid = :userid';
         $params['userid'] = $userid;
     }
-    $userids = $DB->get_fieldset_sql("SELECT DISTINCT userid FROM {vocabmastery_topicstate}
-                                       WHERE vocabmasteryid = :vid $usersql", $params);
+    $userids = $DB->get_fieldset_sql(
+        "SELECT DISTINCT userid FROM {vocabmastery_topicstate}
+                                           WHERE vocabmasteryid = :vid $usersql",
+        $params
+    );
     if ($userid && !in_array($userid, $userids)) {
         $userids[] = $userid;
     }
@@ -320,8 +323,10 @@ function vocabmastery_reset_userdata($data) {
             $vm = $DB->get_record('vocabmastery', ['id' => $id]);
             vocabmastery_grade_item_update($vm, 'reset');
         }
-        $status[] = ['component' => get_string('modulenameplural', 'mod_vocabmastery'),
-            'item' => get_string('resetallprogress', 'mod_vocabmastery'), 'error' => false];
+        $status[] = [
+            'component' => get_string('modulenameplural', 'mod_vocabmastery'),
+            'item' => get_string('resetallprogress', 'mod_vocabmastery'), 'error' => false,
+        ];
     }
     return $status;
 }

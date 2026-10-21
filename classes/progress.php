@@ -200,10 +200,12 @@ class progress {
         $levels = array_values($this->instance->get_levels());
         $bylevel = [];
         foreach ($levels as $li => $level) {
-            $bylevel[$li] = array_values(array_map(
-                fn($t) => (int)$t->id,
-                $this->instance->get_level_topics((int)$level->id)
-            ));
+            $bylevel[$li] = array_values(
+                array_map(
+                    fn($t) => (int)$t->id,
+                    $this->instance->get_level_topics((int)$level->id)
+                )
+            );
         }
         $n = [];
         foreach ($bylevel as $li => $tids) {
@@ -266,10 +268,13 @@ class progress {
             // Column-major: topic 1 of every level, then topic 2 of every level, ...
             $keys = $this->path_keys();
             $order = $topics;
-            usort($order, function ($a, $b) use ($keys, $n) {
-                return [$keys[(int)$a->id], $n[(int)$a->id]['levelindex']]
-                    <=> [$keys[(int)$b->id], $n[(int)$b->id]['levelindex']];
-            });
+            usort(
+                $order,
+                function ($a, $b) use ($keys, $n) {
+                    return [$keys[(int)$a->id], $n[(int)$a->id]['levelindex']]
+                        <=> [$keys[(int)$b->id], $n[(int)$b->id]['levelindex']];
+                }
+            );
             $prev = null;
             foreach ($order as $t) {
                 $tid = (int)$t->id;
@@ -307,6 +312,20 @@ class progress {
         foreach ($summaries as $s) {
             if ($s->passed || $s->started) {
                 $s->unlocked = true;
+            }
+        }
+        if (!empty($this->instance->vm->openprevious)) {
+            // Backward progression: once a topic is open, the earlier topics of its level open too.
+            foreach ($this->instance->get_levels() as $level) {
+                $open = false;
+                $leveltopics = array_reverse(array_values($this->instance->get_level_topics((int)$level->id)));
+                foreach ($leveltopics as $t) {
+                    $s = $summaries[(int)$t->id];
+                    if ($open) {
+                        $s->unlocked = true;
+                    }
+                    $open = $open || $s->unlocked;
+                }
             }
         }
     }
@@ -405,7 +424,7 @@ class progress {
      * Where can the student go after a topic.
      *
      * @param int $topicid
-     * @return array list of ['type' => horizontal|vertical|next, 'topicid' => int]
+     * @return array list of ['type' => horizontal|vertical|backward|next, 'topicid' => int]
      */
     public function routes_after(int $topicid): array {
         $n = $this->neighbours()[$topicid] ?? null;
@@ -428,6 +447,11 @@ class progress {
         }
         if (!$routes && ($next = $this->next_topic()) && $next->topicid !== $topicid) {
             $routes[] = ['type' => 'next', 'topicid' => $next->topicid];
+        }
+        $prev = $n['prevh'];
+        $backward = !empty($this->instance->vm->openprevious) && $mode !== 'open' && $prev && isset($s[$prev]);
+        if ($backward && $s[$prev]->unlocked && !$s[$prev]->passed && !$s[$prev]->empty) {
+            $routes[] = ['type' => 'backward', 'topicid' => $prev];
         }
         return $routes;
     }
@@ -502,12 +526,14 @@ class progress {
         $this->reset();
 
         if ($newlypassed) {
-            $event = event\topic_passed::create([
-                'objectid' => $topicid,
-                'context' => $this->instance->context,
-                'relateduserid' => $this->userid,
-                'other' => ['mastery' => $mastery, 'besttest' => (float)$state->besttest],
-            ]);
+            $event = event\topic_passed::create(
+                [
+                    'objectid' => $topicid,
+                    'context' => $this->instance->context,
+                    'relateduserid' => $this->userid,
+                    'other' => ['mastery' => $mastery, 'besttest' => (float)$state->besttest],
+                ]
+            );
             $event->trigger();
         }
         if ($notify) {
@@ -529,10 +555,15 @@ class progress {
             ['vid' => $this->instance->vm->id, 'uid' => $this->userid]
         );
         $withstate = array_keys($this->get_topic_states());
-        $started = array_unique(array_map(fn($r) => (int)$r->topicid, array_filter(
-            $this->get_item_rows(),
-            fn($r) => $r->attempts > 0
-        )));
+        $started = array_unique(
+            array_map(
+                fn($r) => (int)$r->topicid,
+                array_filter(
+                    $this->get_item_rows(),
+                    fn($r) => $r->attempts > 0
+                )
+            )
+        );
         foreach (array_unique(array_merge($withstate, $started)) as $tid) {
             if (isset($topics[$tid])) {
                 $this->recompute_topic((int)$tid, null, false);
@@ -585,13 +616,19 @@ class progress {
      * @return array
      */
     public function difficult_items(?int $topicid = null, int $limit = 0): array {
-        $rows = array_filter($this->get_item_rows(), fn($r) => $r->difficult
-            && ($topicid === null || (int)$r->topicid === $topicid));
-        usort($rows, function ($a, $b) {
-            $aa = $a->attempts ? $a->correct / $a->attempts : 0;
-            $bb = $b->attempts ? $b->correct / $b->attempts : 0;
-            return $aa <=> $bb;
-        });
+        $rows = array_filter(
+            $this->get_item_rows(),
+            fn($r) => $r->difficult
+                && ($topicid === null || (int)$r->topicid === $topicid)
+        );
+        usort(
+            $rows,
+            function ($a, $b) {
+                $aa = $a->attempts ? $a->correct / $a->attempts : 0;
+                $bb = $b->attempts ? $b->correct / $b->attempts : 0;
+                return $aa <=> $bb;
+            }
+        );
         return $limit ? array_slice($rows, 0, $limit) : $rows;
     }
 }

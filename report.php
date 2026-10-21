@@ -74,12 +74,18 @@ if ($download) {
     $rows = $report->overview($students);
     $states = $report->topic_states(array_keys($students));
     $identity = $report->identity_fields();
-    $columns = array_merge([get_string('student', $c)], array_map(
-        fn($f) => \core_user\fields::get_display_name($f),
-        $identity
-    ), [get_string('progress', $c),
-        get_string('topicspassed', $c), get_string('topics', $c), get_string('accuracy', $c), get_string('answers', $c),
-        get_string('difficultitems', $c), get_string('lastpractice', $c)]);
+    $columns = array_merge(
+        [get_string('student', $c)],
+        array_map(
+            fn($f) => \core_user\fields::get_display_name($f),
+            $identity
+        ),
+        [
+            get_string('progress', $c),
+            get_string('topicspassed', $c), get_string('topics', $c), get_string('accuracy', $c), get_string('answers', $c),
+            get_string('difficultitems', $c), get_string('lastpractice', $c),
+        ]
+    );
     foreach ($topics as $t) {
         $columns[] = format_string($levels[$t->levelid]->name) . ' · ' . format_string($t->name);
     }
@@ -88,8 +94,10 @@ if ($download) {
         $line = array_merge(
             [$fullname($r->user)],
             array_map(fn($f) => (string)($r->user->$f ?? ''), $identity),
-            [$r->progress, $r->passed, $r->topics, $r->accuracy ?? '', $r->answers, $r->difficult,
-                $r->lastseen ? userdate($r->lastseen, '%Y-%m-%d %H:%M') : '']
+            [
+                $r->progress, $r->passed, $r->topics, $r->accuracy ?? '', $r->answers, $r->difficult,
+                $r->lastseen ? userdate($r->lastseen, '%Y-%m-%d %H:%M') : '',
+            ]
         );
         foreach ($topics as $t) {
             $st = $states[$uid][(int)$t->id] ?? null;
@@ -154,9 +162,11 @@ if ($userid) {
         $ts = array_filter($summaries, fn($s) => $s->levelid === (int)$level->id && !$s->empty);
         $p = count(array_filter($ts, fn($s) => $s->passed));
         $avg = $ts ? round(array_sum(array_map(fn($s) => $s->passed ? 100 : min(99, $s->mastery), $ts)) / count($ts)) : 0;
-        $leveldata[] = ['name' => format_string($level->name),
+        $leveldata[] = [
+            'name' => format_string($level->name),
             'status' => ($ts && $p === count($ts)) ? get_string('complete', $c) : $avg . '%',
-            'passed' => $p . ' / ' . count($ts)];
+            'passed' => $p . ' / ' . count($ts),
+        ];
     }
     $accuracy = $report->topic_accuracy([$userid])[$userid] ?? [];
     $topicdata = [];
@@ -171,8 +181,13 @@ if ($userid) {
             'status' => get_string('status_' . progress::status($s), $c),
         ];
     }
-    $difficult = array_map(fn($r) => ['prompt' => $r->prompt, 'correct' => $r->correctvalue,
-        'ratio' => $r->wrong . ' / ' . $r->attempts], $progress->difficult_items(null, 50));
+    $difficult = array_map(
+        fn($r) => [
+            'prompt' => $r->prompt, 'correct' => $r->correctvalue,
+            'ratio' => $r->wrong . ' / ' . $r->attempts,
+        ],
+        $progress->difficult_items(null, 50)
+    );
     $sessions = [];
     foreach ($report->sessions($userid) as $a) {
         $sessions[] = [
@@ -184,21 +199,30 @@ if ($userid) {
                 : get_string('unfinished', $c),
         ];
     }
-    echo $OUTPUT->render_from_template('mod_vocabmastery/report_student', [
-        'picture' => $OUTPUT->user_picture($u, ['size' => 35]),
-        'name' => $fullname($u),
-        'overall' => round($progress->overall_percent()),
-        'passedsummary' => get_string('topicspassedof', $c, (object)['passed' => $progress->topics_passed(),
-            'total' => count($summaries)]),
-        'levels' => $leveldata,
-        'topics' => $topicdata,
-        'hasdifficult' => (bool)$difficult,
-        'difficult' => $difficult,
-        'hassessions' => (bool)$sessions,
-        'sessions' => $sessions,
-        'reseturl' => has_capability('mod/vocabmastery:resetprogress', $context)
-            ? (new moodle_url($url, ['reset' => 1]))->out(false) : null,
-    ]);
+    echo $OUTPUT->render_from_template(
+        'mod_vocabmastery/report_student',
+        [
+            'picture' => $OUTPUT->user_picture($u, ['size' => 35]),
+            'name' => $fullname($u),
+            'overall' => round($progress->overall_percent()),
+            'passedsummary' => get_string(
+                'topicspassedof',
+                $c,
+                (object)[
+                    'passed' => $progress->topics_passed(),
+                    'total' => count($summaries),
+                ]
+            ),
+            'levels' => $leveldata,
+            'topics' => $topicdata,
+            'hasdifficult' => (bool)$difficult,
+            'difficult' => $difficult,
+            'hassessions' => (bool)$sessions,
+            'sessions' => $sessions,
+            'reseturl' => has_capability('mod/vocabmastery:resetprogress', $context)
+                ? (new moodle_url($url, ['reset' => 1]))->out(false) : null,
+        ]
+    );
     echo $OUTPUT->footer();
     die;
 }
@@ -219,17 +243,31 @@ if ($tab === 'heatmap') {
         $cells = [];
         foreach ($topics as $t) {
             [$cls, $label] = report::heat($states[$uid][(int)$t->id] ?? null, $acc[$uid][(int)$t->id] ?? null);
-            $cells[] = ['cls' => $cls, 'label' => $label,
-                'title' => format_string($t->name) . ': ' . get_string('heat_' . $cls, $c)];
+            $cells[] = [
+                'cls' => $cls, 'label' => $label,
+                'title' => format_string($t->name) . ': ' . get_string('heat_' . $cls, $c),
+            ];
         }
-        $rows[] = ['url' => $instance->url('report.php', ['user' => $uid])->out(false), 'name' => $fullname($u),
-            'cells' => $cells];
+        $rows[] = [
+            'url' => $instance->url('report.php', ['user' => $uid])->out(false), 'name' => $fullname($u),
+            'cells' => $cells,
+        ];
     }
-    echo $OUTPUT->render_from_template('mod_vocabmastery/report_heatmap', [
-        'topics' => array_values(array_map(fn($t) => ['label' => format_string($levels[$t->levelid]->name) . ' · ' .
-            format_string($t->name)], $topics)),
-        'rows' => $rows,
-    ]);
+    echo $OUTPUT->render_from_template(
+        'mod_vocabmastery/report_heatmap',
+        [
+            'topics' => array_values(
+                array_map(
+                    fn($t) => [
+                        'label' => format_string($levels[$t->levelid]->name) . ' · ' .
+                        format_string($t->name),
+                    ],
+                    $topics
+                )
+            ),
+            'rows' => $rows,
+        ]
+    );
     echo $OUTPUT->footer();
     die;
 }

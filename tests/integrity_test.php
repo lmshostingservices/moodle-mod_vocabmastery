@@ -105,8 +105,17 @@ final class integrity_test extends \advanced_testcase {
             }
             // Sessions are never finished (tab closed).
         }
-        $this->assertEquals(1, $DB->get_field('vocabmastery_topicstate', 'passed', ['userid' => $userid,
-            'topicid' => $data['topicid']]));
+        $this->assertEquals(
+            1,
+            $DB->get_field(
+                'vocabmastery_topicstate',
+                'passed',
+                [
+                    'userid' => $userid,
+                    'topicid' => $data['topicid'],
+                ]
+            )
+        );
     }
 
     public function test_topic_without_core_words_does_not_block(): void {

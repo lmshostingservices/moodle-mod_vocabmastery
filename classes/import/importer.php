@@ -36,8 +36,10 @@ class importer {
     /** @var string skip|update|add|replace */
     protected string $duplicates;
     /** @var array stats */
-    public array $stats = ['levels' => 0, 'topics' => 0, 'sets' => 0, 'created' => 0, 'updated' => 0, 'skipped' => 0,
-        'deleted' => 0];
+    public array $stats = [
+        'levels' => 0, 'topics' => 0, 'sets' => 0, 'created' => 0, 'updated' => 0, 'skipped' => 0,
+        'deleted' => 0,
+    ];
     /** @var array replace mode: setid => ids of the words the set had before the import */
     protected array $replaced = [];
     /** @var array replace mode: setid => [itemid => true] words matched by the import */
@@ -101,12 +103,15 @@ class importer {
         if ($this->duplicates === 'replace' && !isset($this->replaced[$id])) {
             // Remember what the set had. Matching words are updated in place, so learner progress is kept.
             // Only words missing from the import are deleted at the end.
-            $this->replaced[$id] = array_map('intval', $DB->get_fieldset_select(
-                'vocabmastery_item',
-                'id',
-                'setid = :setid',
-                ['setid' => $id]
-            ));
+            $this->replaced[$id] = array_map(
+                'intval',
+                $DB->get_fieldset_select(
+                    'vocabmastery_item',
+                    'id',
+                    'setid = :setid',
+                    ['setid' => $id]
+                )
+            );
             $this->kept[$id] = [];
         }
         return $id;
@@ -269,8 +274,15 @@ class importer {
             $setid = $this->set($topicid, $sname, $settings);
             if (!empty($explicit[$key]) && empty($applied[$setid])) {
                 // The file says how this set works: also update a set that already existed.
-                $update = array_intersect_key($settings, array_flip(['gated', 'answermode', 'options', 'numoptions',
-                    'instruction']));
+                $update = array_intersect_key(
+                    $settings,
+                    array_flip(
+                        [
+                            'gated', 'answermode', 'options', 'numoptions',
+                            'instruction',
+                        ]
+                    )
+                );
                 $DB->update_record('vocabmastery_set', (object)(['id' => $setid, 'timemodified' => time()] + $update));
                 $applied[$setid] = true;
             }
@@ -364,11 +376,13 @@ class importer {
      * Log event.
      */
     protected function log(): void {
-        $event = \mod_vocabmastery\event\content_imported::create([
-            'objectid' => $this->instance->vm->id,
-            'context' => $this->instance->context,
-            'other' => ['items' => $this->stats['created'] + $this->stats['updated']],
-        ]);
+        $event = \mod_vocabmastery\event\content_imported::create(
+            [
+                'objectid' => $this->instance->vm->id,
+                'context' => $this->instance->context,
+                'other' => ['items' => $this->stats['created'] + $this->stats['updated']],
+            ]
+        );
         $event->trigger();
     }
 }

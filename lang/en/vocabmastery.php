@@ -369,6 +369,8 @@ $string['js_next_mistakes_one'] = 'Practise the word you missed';
 $string['js_next_mistakes_text'] = 'They come first, so they stick before your next round.';
 $string['js_next_practice'] = 'Start practising';
 $string['js_next_practice_text'] = 'Test yourself on the words you just learned.';
+$string['js_next_practisetopic'] = 'Practise this topic';
+$string['js_next_practisetopic_text'] = 'Work through the words again, then retake the mastery check.';
 $string['js_nextstep'] = 'What to try next';
 $string['js_noanswer'] = 'No answer';
 $string['js_optionaltag'] = 'optional';
@@ -394,6 +396,7 @@ $string['js_res_solid'] = 'Solid work.';
 $string['js_res_start'] = 'Good start.';
 $string['js_res_tip_excellent'] = 'You know these words well.';
 $string['js_res_tip_great'] = 'Nearly there. A little more practice and they will stick.';
+$string['js_res_tip_hidden'] = 'Your teacher has hidden the answers for this check. Practise the topic, then try again.';
 $string['js_res_tip_solid'] = 'Decent result. Keep practising the words you missed.';
 $string['js_res_tip_start'] = 'Every round helps. Start with the words you missed.';
 $string['js_retry'] = 'Try again';
@@ -402,6 +405,7 @@ $string['js_reveal'] = 'Show answer';
 $string['js_reviewanswers'] = 'Review answers ({$a})';
 $string['js_reviewedn'] = 'You reviewed {$a} cards.';
 $string['js_reviewedn_one'] = 'You reviewed 1 card.';
+$string['js_route_backward'] = 'Go back in this level';
 $string['js_route_horizontal'] = 'Continue in this level';
 $string['js_route_next'] = 'Next available topic';
 $string['js_route_vertical'] = 'Go deeper: next level';
@@ -499,6 +503,12 @@ $string['numoptions'] = 'Number of buttons';
 $string['numoptions_help'] = 'How many buttons each question shows: the correct answer plus wrong answers from other words in the set. 2–6, default 4.';
 $string['nwarnings'] = '{$a} warnings (these rows are skipped or flagged):';
 $string['nwords'] = 'Words: {$a}';
+$string['openprevious'] = 'Also open earlier topics in the same level';
+$string['openprevious_help'] = 'Lets learners go back within a level. As soon as a topic is open, every earlier topic in the same level opens too.
+
+Example with the dual pathway: a learner who reaches B1 Lektion 3 (from B1 Lektion 2, or by going deeper from A2 Lektion 3) can also open B1 Lektion 2 and 1. Forward (next topic in the level) and downward (same topic in the next level) still work as before.
+
+Off by default. Topics a learner has already passed or started always stay open.';
 $string['optional'] = 'optional';
 $string['orupload'] = 'or upload a file';
 $string['orupload_help'] = 'A .csv, .xlsx, .xls or .ods file with one word per row, up to 10,000 rows and 30 columns. Download the sample file above for the column layout.';
@@ -590,6 +600,7 @@ $string['requirelearn'] = 'Learners must complete Learn before Practice, Blitz a
 $string['requirelearn_help'] = 'When ticked, learners must go through Learn mode for a topic once before they can start Practice, Blitz, Streak or the mastery check for that topic.';
 $string['resetallprogress'] = 'Delete all vocabulary progress and training history';
 $string['resetprogress'] = 'Reset this learner\'s progress';
+$string['route_backward'] = 'Go back in this level';
 $string['route_horizontal'] = 'Continue in this level';
 $string['route_next'] = 'Next available topic';
 $string['route_vertical'] = 'Go deeper: next level';
@@ -633,6 +644,15 @@ $string['testlength_help'] = 'How many words a mastery check asks.
 
 * **0** (default): every core word of the topic.
 * **A number**, e.g. 20: a random sample of that many words. Words missed in a failed check are always asked again in the next one.';
+$string['testreview'] = 'After the mastery check';
+$string['testreview_help'] = 'What learners see when a mastery check ends.
+
+* **Show answers** (default): the score plus each word, right or wrong, with the correct answer.
+* **Hide answers**: only the score, pass or not, and the result per set. Learners do not see which words were wrong or what the right answers were, so they cannot copy them into the next attempt. They are sent back to practise the topic instead.
+
+When answers are hidden, the server does not send them to the browser at all. Words missed in a failed check are still asked again in the next check.';
+$string['testreview_hide'] = 'Hide answers (score only)';
+$string['testreview_show'] = 'Show answers (right/wrong and correct answers)';
 $string['topic'] = 'Topic';
 $string['topicdescription'] = 'Description for learners';
 $string['topicdescription_help'] = 'Optional short text shown to learners at the top of the topic page.';
