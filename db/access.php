@@ -57,11 +57,14 @@ $capabilities = [
         'contextlevel' => CONTEXT_MODULE,
         'archetypes' => ['teacher' => CAP_ALLOW, 'editingteacher' => CAP_ALLOW, 'manager' => CAP_ALLOW],
     ],
+    // Managing and importing vocabulary is for managers only by default (since 1.2.0). On sites with the
+    // Premium SaaS theme it moves to the Site Owner role instead (see \mod_vocabmastery\local\roles).
+    // Grant it to other roles under Site administration > Users > Permissions > Define roles.
     'mod/vocabmastery:managecontent' => [
         'riskbitmask' => RISK_XSS,
         'captype' => 'write',
         'contextlevel' => CONTEXT_MODULE,
-        'archetypes' => ['editingteacher' => CAP_ALLOW, 'manager' => CAP_ALLOW],
+        'archetypes' => ['manager' => CAP_ALLOW],
     ],
     'mod/vocabmastery:resetprogress' => [
         'riskbitmask' => RISK_DATALOSS,

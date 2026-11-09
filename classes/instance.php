@@ -246,7 +246,8 @@ class instance {
     /**
      * Can the current user practise and take mastery checks.
      *
-     * Students need mod/vocabmastery:attempt. Content managers may also run the trainer to preview it.
+     * Students need mod/vocabmastery:attempt. Content managers and editing teachers (who can manage the activity)
+     * may also run the trainer to preview it; previews never write grades or completion.
      *
      * @return bool
      */
@@ -254,7 +255,8 @@ class instance {
         if (!isloggedin() || isguestuser()) {
             return false;
         }
-        return has_capability('mod/vocabmastery:attempt', $this->context) || $this->can_manage();
+        return has_capability('mod/vocabmastery:attempt', $this->context) || $this->can_manage()
+            || has_capability('moodle/course:manageactivities', $this->context);
     }
 
     /**

@@ -26,6 +26,15 @@ defined('MOODLE_INTERNAL') || die();
 
 $tasks = [
     [
+        'classname' => 'mod_vocabmastery\task\apply_role_defaults',
+        'blocking' => 0,
+        'minute' => 'R',
+        'hour' => 'R',
+        'day' => '*',
+        'month' => '*',
+        'dayofweek' => '*',
+    ],
+    [
         'classname' => 'mod_vocabmastery\task\close_stale_sessions',
         'blocking' => 0,
         'minute' => 'R',

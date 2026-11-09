@@ -2,6 +2,24 @@
 
 All notable changes to mod_vocabmastery are documented here.
 
+## [v1.2.0] - 2026-11-09
+
+### Changed
+- Managing and importing vocabulary (`mod/vocabmastery:managecontent`) is no longer an editing-teacher
+  permission by default:
+  - On sites with the LMS Labs Premium SaaS theme, the theme's **Site Owner** role gets it and the
+    Manager role does not.
+  - On other sites, the **Manager** role gets it.
+  - If the Premium SaaS theme is installed later, a scheduled task ("Apply vocabulary management role
+    defaults") moves the permission from Manager to Site Owner once. Changes an administrator makes
+    afterwards are kept.
+- The permission covers Manage vocabulary, the word tables, Import vocabulary, the sample and export
+  files, and resolving learner word reports. The upgrade removes the default permission from the editing-teacher
+  role; any course or activity override an administrator has set is kept. To give another role access,
+  allow "Manage and import vocabulary" for it under Site administration > Users > Permissions > Define roles.
+- Teachers keep everything else: adding the activity, its settings, reports, results download, resetting
+  learner progress, and previewing the trainer (preview is now allowed to anyone who can edit the activity).
+
 ## [v1.1.0] - 2026-10-21
 
 ### Added

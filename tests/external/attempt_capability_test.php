@@ -92,14 +92,14 @@ final class attempt_capability_test extends \externallib_advanced_testcase {
     }
 
     public function test_non_editing_teacher_cannot_train(): void {
-        // Non-editing teachers have :view but neither :attempt nor :managecontent.
+        // Non-editing teachers have :view but neither :attempt, :managecontent nor activity editing rights.
         $user = $this->getDataGenerator()->create_and_enrol($this->course, 'teacher');
         $this->setUser($user);
         $this->expectException(\required_capability_exception::class);
         start_session::execute((int)$this->vm->cmid, 'practice', $this->data['topicid']);
     }
 
-    public function test_content_manager_can_preview(): void {
+    public function test_editing_teacher_can_preview(): void {
         $user = $this->getDataGenerator()->create_and_enrol($this->course, 'editingteacher');
         $this->setUser($user);
         $result = start_session::execute((int)$this->vm->cmid, 'practice', $this->data['topicid']);

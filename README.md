@@ -4,7 +4,7 @@ A Moodle activity for vocabulary that has to be memorised rather than derived fr
 
 Nothing language-specific is hard-coded. German der/die/das, A1/A2/B1 and lesson names are **content**, not code.
 
-- Component: `mod_vocabmastery`, version 1.1.0 (stable)
+- Component: `mod_vocabmastery`, version 1.2.0 (stable)
 - Target: Moodle 4.4 – 5.2 (`requires` 2024042200, `supported` [404, 502]). Runtime-tested on Moodle 5.0.10 / PHP 8.4 /
   PostgreSQL 16 (full), Moodle 4.4.12 / PHP 8.3 (upgrade, PHPUnit) and Moodle 5.2.3 (upgrade, PHPUnit, Behat); the other versions are covered by the CI matrix in `.github/workflows/ci.yml` (repository only, not in the ZIP).
 - Moodle code checker (moodle-cs): 0 errors, 0 warnings. PHPDoc checker (local_moodlecheck): 0 errors. Grunt (ESLint,
@@ -108,7 +108,7 @@ There are no metered or AI charges: no AI generation, speech or AI-provider call
 
 ## Moodle integration
 
-- **Capabilities**: addinstance, view, attempt, viewownprogress, viewallprogress, managecontent, resetprogress, exportresults. Training web services require `attempt` (or `managecontent`, for teacher preview); `view` alone only shows the pages. There is no student picker and no teacher password: identity and permissions come from Moodle.
+- **Capabilities**: addinstance, view, attempt, viewownprogress, viewallprogress, managecontent, resetprogress, exportresults. Managing and importing vocabulary (`managecontent`) is given by default to the Site Owner role on sites with the LMS Labs Premium SaaS theme, and to the Manager role elsewhere (never to editing teachers); administrators can grant it to editing teachers under Site administration → Users → Permissions → Define roles. Training web services require `attempt` (or `managecontent` / editing rights on the activity, for teacher preview); `view` alone only shows the pages. There is no student picker and no teacher password: identity and permissions come from Moodle.
 - **Gradebook**: % of topics passed, or the average of best mastery-check scores. Point and scale grades are both supported.
 - **Completion**: view; pass N topics; pass all topics; reach X% overall progress.
 - **Events**: module viewed, instance list viewed, topic passed, session completed, content imported.

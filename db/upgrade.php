@@ -76,5 +76,13 @@ function xmldb_vocabmastery_upgrade($oldversion) {
         }
         upgrade_mod_savepoint(true, 2026102100, 'vocabmastery');
     }
+
+    if ($oldversion < 2026110900) {
+        // Managing and importing vocabulary is no longer an editing-teacher permission by default.
+        \mod_vocabmastery\local\roles::remove_teacher_default();
+        // Sites with the Premium SaaS theme give it to the Site Owner instead of the Manager.
+        \mod_vocabmastery\local\roles::apply_defaults();
+        upgrade_mod_savepoint(true, 2026110900, 'vocabmastery');
+    }
     return true;
 }
